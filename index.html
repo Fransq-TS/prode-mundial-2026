@@ -187,8 +187,8 @@ const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 const T={
-  es:{title:'Prode Mundial 2026',sub:'Ingresá para cargar tus pronósticos',login:'Ingresar',register:'Registrarse',your_name:'Tu nombre',email:'Email',password:'Contraseña',enter:'Ingresar',create:'Crear cuenta',logout:'Salir',change:'Cambiar',groups:'Grupos',elim:'Eliminatoria',ranking:'Ranking',admin:'Admin',exact:'marcador exacto',result_pt:'resultado correcto',by_group:'Por grupo',by_date:'Por fecha',all_groups:'Todos los grupos',all_dates:'Todas las fechas',group_lbl:'Grupo',played:'grupos jugados',players_lbl:'jugadores',elim_played:'eliminatorias',exact_lbl:'exactos',result_lbl:'resultado',miss_lbl:'fallos',pts:'pts',you:'vos',saved:'Guardado',already_started:'Este partido ya empezó 🔒',admin_only:'Solo el admin puede cargar resultados.',res_groups:'Resultados grupos',res_elim:'Resultados eliminat.',teams_elim:'Equipos eliminat.',players_tab:'Jugadores',admin_mode:'Admin · Código:',to_define:'Por definir',match:'Partido',elim_note:'Los equipos se actualizan cuando avanza el torneo.',footer:'¿Problemas? Contactá al admin.',loading:'Cargando...'},
-  en:{title:'World Cup 2026 Predictor',sub:'Sign in to submit your predictions',login:'Sign in',register:'Sign up',your_name:'Your name',email:'Email',password:'Password',enter:'Sign in',create:'Create account',logout:'Sign out',change:'Switch',groups:'Groups',elim:'Knockout',ranking:'Ranking',admin:'Admin',exact:'exact score',result_pt:'correct result',by_group:'By group',by_date:'By date',all_groups:'All groups',all_dates:'All dates',group_lbl:'Group',played:'group matches played',players_lbl:'players',elim_played:'knockout matches',exact_lbl:'exact',result_lbl:'result',miss_lbl:'misses',pts:'pts',you:'you',saved:'Saved',already_started:'This match already started 🔒',admin_only:'Only the admin can load results.',res_groups:'Group results',res_elim:'Knockout results',teams_elim:'Knockout teams',players_tab:'Players',admin_mode:'Admin · Code:',to_define:'TBD',match:'Match',elim_note:'Teams update as the tournament progresses.',footer:'Problems? Contact your office admin.',loading:'Loading...'}
+  es:{title:'Prode Mundial 2026',sub:'Ingresá para cargar tus pronósticos',login:'Ingresar',register:'Registrarse',your_name:'Tu nombre',email:'Email',password:'Contraseña',enter:'Ingresar',create:'Crear cuenta',logout:'Salir',change:'Cambiar',groups:'Grupos',elim:'Eliminatoria',ranking:'Ranking',admin:'Admin',exact:'marcador exacto',result_pt:'resultado correcto',by_group:'Por grupo',by_date:'Por fecha',all_groups:'Todos los grupos',all_dates:'Todas las fechas',today:'Hoy',group_lbl:'Grupo',played:'grupos jugados',players_lbl:'jugadores',elim_played:'eliminatorias',exact_lbl:'exactos',result_lbl:'resultado',miss_lbl:'fallos',pts:'pts',you:'vos',saved:'Guardado',already_started:'Este partido ya empezó 🔒',admin_only:'Solo el admin puede cargar resultados.',res_groups:'Resultados grupos',res_elim:'Resultados eliminat.',teams_elim:'Equipos eliminat.',players_tab:'Jugadores',admin_mode:'Admin · Código:',to_define:'Por definir',match:'Partido',elim_note:'Los equipos se actualizan cuando avanza el torneo.',footer:'¿Problemas? Contactá al admin.',loading:'Cargando...'},
+  en:{title:'World Cup 2026 Predictor',sub:'Sign in to submit your predictions',login:'Sign in',register:'Sign up',your_name:'Your name',email:'Email',password:'Password',enter:'Sign in',create:'Create account',logout:'Sign out',change:'Switch',groups:'Groups',elim:'Knockout',ranking:'Ranking',admin:'Admin',exact:'exact score',result_pt:'correct result',by_group:'By group',by_date:'By date',all_groups:'All groups',all_dates:'All dates',today:'Today',group_lbl:'Group',played:'group matches played',players_lbl:'players',elim_played:'knockout matches',exact_lbl:'exact',result_lbl:'result',miss_lbl:'misses',pts:'pts',you:'you',saved:'Saved',already_started:'This match already started 🔒',admin_only:'Only the admin can load results.',res_groups:'Group results',res_elim:'Knockout results',teams_elim:'Knockout teams',players_tab:'Players',admin_mode:'Admin · Code:',to_define:'TBD',match:'Match',elim_note:'Teams update as the tournament progresses.',footer:'Problems? Contact your office admin.',loading:'Loading...'}
 };
 let lang=localStorage.getItem('lang')||'es';
 function t(k){return T[lang]?.[k]||T.es[k]||k;}
@@ -340,6 +340,9 @@ setInterval(refreshLocks,15000);
 function getResult(h,a){const hi=parseInt(h),ai=parseInt(a);if(isNaN(hi)||isNaN(ai))return null;return hi>ai?'1':hi<ai?'2':'X';}
 function initials(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);}
 function colorIdx(uid){const i=allProfiles.findIndex(p=>p.id===uid);return i<0?0:i%AVATARS.length;}
+function matchDateSortValue(date){const[d,m]=date.split('/').map(Number);return new Date(2026,m-1,d).getTime();}
+function todayMatchDate(){const now=new Date();return `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}`;}
+function sortedMatchDates(){return [...new Set(MATCHES.map(m=>m.date))].sort((a,b)=>matchDateSortValue(a)-matchDateSortValue(b));}
 let toastT;
 function showToast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(type==='err'?'err':'ok');clearTimeout(toastT);toastT=setTimeout(()=>el.className='toast',2500);}
 
@@ -655,7 +658,8 @@ function renderFixture(){
   const gf=document.getElementById('gf-filter')?.value||'all';
   const df=document.getElementById('df-filter')?.value||'all';
   const vm=document.getElementById('view-mode')?.value||'grupo';
-  const uniqueDates=[...new Set(MATCHES.map(m=>m.date))];
+  const uniqueDates=sortedMatchDates();
+  const todayDate=todayMatchDate();
   let html=`<div class="legend">
     <span class="legend-item"><strong>3pts</strong> ${t('exact')}</span>
     <span class="legend-item"><strong>1pt</strong> ${t('result_pt')}</span>
@@ -671,12 +675,14 @@ function renderFixture(){
     </select>
     <select id="df-filter" onchange="renderFixture()">
       <option value="all">${t('all_dates')}</option>
+      <option value="today"${df==='today'?' selected':''}>📍 ${t('today')}</option>
       ${uniqueDates.map(d=>`<option value="${d}"${d===df?' selected':''}>📅 ${d}</option>`).join('')}
     </select>
   </div>`;
   let filtered=MATCHES;
   if(gf!=='all')filtered=filtered.filter(m=>m.group===gf);
-  if(df!=='all')filtered=filtered.filter(m=>m.date===df);
+  if(df==='today')filtered=filtered.filter(m=>m.date===todayDate);
+  else if(df!=='all')filtered=filtered.filter(m=>m.date===df);
   if(vm==='fecha'){
     const byDate={};
     filtered.forEach(m=>{if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
