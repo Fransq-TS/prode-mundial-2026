@@ -406,33 +406,51 @@ async function doLogout(){
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────────────────────────
+async function fetchAllRows(table,select='*'){
+  const pageSize=1000;
+  let from=0;
+  let rows=[];
+  while(true){
+    const{data,error}=await sb.from(table).select(select).range(from,from+pageSize-1);
+    if(error){
+      console.error(`Error loading ${table}:`,error);
+      showToast(error.message||`Error loading ${table}`,'err');
+      return rows;
+    }
+    rows=rows.concat(data||[]);
+    if(!data||data.length<pageSize)break;
+    from+=pageSize;
+  }
+  return rows;
+}
+
 async function loadAllData(){
-  const[profRes,predRes,elimPredRes,resRes,elimResRes,elimTeamRes]=await Promise.all([
-    sb.from('profiles').select('*'),
-    sb.from('predictions').select('*'),
-    sb.from('elim_predictions').select('*'),
-    sb.from('results').select('*'),
-    sb.from('elim_results').select('*'),
-    sb.from('elim_teams').select('*'),
+  const[profiles,predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
+    fetchAllRows('profiles'),
+    fetchAllRows('predictions'),
+    fetchAllRows('elim_predictions'),
+    fetchAllRows('results'),
+    fetchAllRows('elim_results'),
+    fetchAllRows('elim_teams'),
   ]);
-  allProfiles=profRes.data||[];
+  allProfiles=profiles;
   // Build predictions map: {userId: {matchId: {h,a}}}
   allPredictions={};
-  (predRes.data||[]).forEach(r=>{
+  predictions.forEach(r=>{
     if(!allPredictions[r.user_id])allPredictions[r.user_id]={};
     allPredictions[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};
   });
   allElimPreds={};
-  (elimPredRes.data||[]).forEach(r=>{
+  elimPredictions.forEach(r=>{
     if(!allElimPreds[r.user_id])allElimPreds[r.user_id]={};
     allElimPreds[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};
   });
   results={};
-  (resRes.data||[]).forEach(r=>{results[r.match_id]={h:r.home_score,a:r.away_score};});
+  groupResults.forEach(r=>{results[r.match_id]={h:r.home_score,a:r.away_score};});
   elimResults={};
-  (elimResRes.data||[]).forEach(r=>{elimResults[r.match_id]={h:r.home_score,a:r.away_score};});
+  knockoutResults.forEach(r=>{elimResults[r.match_id]={h:r.home_score,a:r.away_score};});
   elimTeams={};
-  (elimTeamRes.data||[]).forEach(r=>{elimTeams[r.match_id]={home:r.home_team,away:r.away_team};});
+  knockoutTeams.forEach(r=>{elimTeams[r.match_id]={home:r.home_team,away:r.away_team};});
 }
 
 // ─── SAVE PREDICTION ──────────────────────────────────────────────────────────
@@ -803,13 +821,40 @@ function renderAdminPlayers(){
   document.getElementById('admin-body').innerHTML=html;
 }
 
+async function saveSingleMatchRecord(table, mid, payload){
+  const now=new Date().toISOString();
+  const row={match_id:mid,...payload};
+  if(table!=='elim_teams')row.updated_at=now;
+
+  const{data:existing,error:selectError}=await sb
+    .from(table)
+    .select('match_id')
+    .eq('match_id',mid)
+    .limit(1);
+  if(selectError)return selectError;
+
+  if(existing&&existing.length){
+    const{error}=await sb.from(table).update(row).eq('match_id',mid);
+    return error;
+  }
+
+  const{error}=await sb.from(table).insert(row);
+  return error;
+}
+
+function showSaveError(error){
+  console.error('Save failed:',error);
+  showToast(error?.message||'No se pudo guardar','err');
+}
+
 async function saveResult(inp){
   if(!isAdmin){showToast(t('admin_only'),'err');return;}
   const mid=inp.dataset.mid,side=inp.dataset.side,val=parseInt(inp.value);
   if(!results[mid])results[mid]={h:null,a:null};
   results[mid][side]=isNaN(val)?null:val;
   const r=results[mid];
-  await sb.from('results').upsert({match_id:mid,home_score:r.h,away_score:r.a,updated_at:new Date().toISOString()},{onConflict:'match_id'});
+  const error=await saveSingleMatchRecord('results',mid,{home_score:r.h,away_score:r.a});
+  if(error){showSaveError(error);return;}
   showToast(t('saved'));
 }
 
@@ -819,7 +864,8 @@ async function saveElimResult(inp){
   if(!elimResults[mid])elimResults[mid]={h:null,a:null};
   elimResults[mid][side]=isNaN(val)?null:val;
   const r=elimResults[mid];
-  await sb.from('elim_results').upsert({match_id:mid,home_score:r.h,away_score:r.a,updated_at:new Date().toISOString()},{onConflict:'match_id'});
+  const error=await saveSingleMatchRecord('elim_results',mid,{home_score:r.h,away_score:r.a});
+  if(error){showSaveError(error);return;}
   showToast(t('saved'));
 }
 
@@ -829,7 +875,8 @@ async function saveElimTeam(inp){
   if(!elimTeams[mid])elimTeams[mid]={home:'',away:''};
   elimTeams[mid][side]=val;
   const tm=elimTeams[mid];
-  await sb.from('elim_teams').upsert({match_id:mid,home_team:tm.home,away_team:tm.away},{onConflict:'match_id'});
+  const error=await saveSingleMatchRecord('elim_teams',mid,{home_team:tm.home,away_team:tm.away});
+  if(error)showSaveError(error);
 }
 
 const renders={fixture:renderFixture,elim:renderElim,ranking:renderRanking,admin:renderAdmin};
