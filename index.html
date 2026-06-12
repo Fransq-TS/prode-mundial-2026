@@ -294,10 +294,23 @@ let rankingDataLoaded=false;
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
-  return false; // ⚠️ LOCK DESACTIVADO TEMPORALMENTE
   if(!match||!match.iso)return false;
   const kickoff=new Date(match.iso+':00-04:00');
   return new Date()>=(kickoff.getTime()-60*1000);
+}
+
+function lockPredictionInput(inp){
+  inp.disabled=true;
+  inp.style.opacity='0.4';
+  if(document.activeElement===inp)inp.blur();
+}
+
+function guardPredictionFocus(inp){
+  const match=MATCHES.find(m=>m.id===inp.dataset.mid);
+  if(!match||!isLocked(match))return;
+  lockPredictionInput(inp);
+  showToast(t('already_started'),'err');
+  refreshLocks();
 }
 
 function refreshLocks(){
@@ -309,7 +322,14 @@ function refreshLocks(){
     const match=MATCHES.find(m=>m.id===inp.dataset.mid);
     if(!match)return;
     const locked=isLocked(match);
-    card.querySelectorAll('input').forEach(i=>{i.disabled=locked;i.style.opacity=locked?'0.4':'1';});
+    card.querySelectorAll('input').forEach(i=>{
+      if(locked){
+        lockPredictionInput(i);
+      }else{
+        i.disabled=false;
+        i.style.opacity='1';
+      }
+    });
     const meta=card.querySelector('.match-meta');
     if(meta)meta.textContent=`${match.date} ${match.time}hs · ${t('group_lbl')} ${match.group}${locked?' 🔒':''}`;
   });
@@ -493,7 +513,7 @@ async function savePred(inp){
   if(isNaN(numVal)||numVal<0)return;
   const match=MATCHES.find(m=>m.id===mid);
   if(match&&isLocked(match)){
-    inp.disabled=true;inp.style.opacity='0.4';
+    lockPredictionInput(inp);
     showToast(t('already_started'),'err');
     refreshLocks();return;
   }
@@ -600,10 +620,10 @@ function matchCard(m){
       <span class="team"><span style="margin-right:4px">${fh}</span>${m.home}</span>
       <div class="score-wrap">
         <input type="number" min="0" max="20" value="${pred.h!==null?pred.h:''}" placeholder="?"
-          data-mid="${m.id}" data-side="h" onblur="savePred(this)" ${locked?'disabled style="opacity:.4"':''}>
+          data-mid="${m.id}" data-side="h" onfocus="guardPredictionFocus(this)" onblur="savePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
         <span class="sep">-</span>
         <input type="number" min="0" max="20" value="${pred.a!==null?pred.a:''}" placeholder="?"
-          data-mid="${m.id}" data-side="a" onblur="savePred(this)" ${locked?'disabled style="opacity:.4"':''}>
+          data-mid="${m.id}" data-side="a" onfocus="guardPredictionFocus(this)" onblur="savePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
       </div>
       <span class="team r">${m.away}<span style="margin-left:4px">${fa}</span></span>
       ${badge}
