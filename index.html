@@ -289,8 +289,8 @@ let results={};
 let elimResults={};
 let elimTeams={};
 let saveTimer=null;
-let autoRefreshInterval=null;
 let rankingDataLoaded=false;
+let predictionSaveTimers={};
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
@@ -419,7 +419,6 @@ async function doRegister(){
 }
 
 async function doLogout(){
-  if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
   await sb.auth.signOut();
   currentUser=null;currentProfile=null;isAdmin=false;
   document.getElementById('main-app').style.display='none';
@@ -437,9 +436,7 @@ async function fetchAllRows(tableOrQuery,select='*'){
   while(true){
     const{data,error}=await getQuery().range(from,from+pageSize-1);
     if(error){
-      console.error('Error loading data:',error);
-      showToast(error.message||'Error loading data','err');
-      return rows;
+      throw error;
     }
     rows=rows.concat(data||[]);
     if(!data||data.length<pageSize)break;
@@ -450,12 +447,12 @@ async function fetchAllRows(tableOrQuery,select='*'){
 
 function buildPredictionMaps(predictions,elimPredictions){
   allPredictions={};
-  predictions.forEach(r=>{
+  [...predictions].sort((a,b)=>new Date(a.updated_at||0)-new Date(b.updated_at||0)).forEach(r=>{
     if(!allPredictions[r.user_id])allPredictions[r.user_id]={};
     allPredictions[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};
   });
   allElimPreds={};
-  elimPredictions.forEach(r=>{
+  [...elimPredictions].sort((a,b)=>new Date(a.updated_at||0)-new Date(b.updated_at||0)).forEach(r=>{
     if(!allElimPreds[r.user_id])allElimPreds[r.user_id]={};
     allElimPreds[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};
   });
@@ -471,39 +468,59 @@ function buildResultsMaps(groupResults,knockoutResults,knockoutTeams){
 }
 
 async function loadUserData(){
-  const[predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
-    fetchAllRows(()=>sb.from('predictions').select('*').eq('user_id',currentUser.id)),
-    fetchAllRows(()=>sb.from('elim_predictions').select('*').eq('user_id',currentUser.id)),
-    fetchAllRows('results'),
-    fetchAllRows('elim_results'),
-    fetchAllRows('elim_teams'),
-  ]);
-  allProfiles=currentProfile?[currentProfile]:[];
-  buildPredictionMaps(predictions,elimPredictions);
-  buildResultsMaps(groupResults,knockoutResults,knockoutTeams);
-  rankingDataLoaded=false;
+  try{
+    const[predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
+      fetchAllRows(()=>sb.from('predictions').select('*').eq('user_id',currentUser.id)),
+      fetchAllRows(()=>sb.from('elim_predictions').select('*').eq('user_id',currentUser.id)),
+      fetchAllRows('results'),
+      fetchAllRows('elim_results'),
+      fetchAllRows('elim_teams'),
+    ]);
+    allProfiles=currentProfile?[currentProfile]:[];
+    buildPredictionMaps(predictions,elimPredictions);
+    buildResultsMaps(groupResults,knockoutResults,knockoutTeams);
+    rankingDataLoaded=false;
+    return true;
+  }catch(error){
+    console.error('Error loading user data:',error);
+    showToast(error.message||'Error loading data','err');
+    return false;
+  }
 }
 
 async function loadRankingData(force=false){
-  if(rankingDataLoaded&&!force)return;
-  const[profiles,predictions,elimPredictions]=await Promise.all([
-    fetchAllRows('profiles'),
-    fetchAllRows('predictions'),
-    fetchAllRows('elim_predictions'),
-  ]);
-  allProfiles=profiles;
-  buildPredictionMaps(predictions,elimPredictions);
-  rankingDataLoaded=true;
-}
-
-async function refreshActiveData(){
-  const activeTab=document.querySelector('.bnav-btn.active');
-  const tabId=activeTab?activeTab.dataset.tab:'fixture';
-  await loadUserData();
-  if(tabId==='ranking'||tabId==='admin')await loadRankingData(true);
+  if(rankingDataLoaded&&!force)return true;
+  try{
+    const[profiles,predictions,elimPredictions]=await Promise.all([
+      fetchAllRows('profiles'),
+      fetchAllRows('predictions'),
+      fetchAllRows('elim_predictions'),
+    ]);
+    allProfiles=profiles;
+    buildPredictionMaps(predictions,elimPredictions);
+    rankingDataLoaded=true;
+    return true;
+  }catch(error){
+    console.error('Error loading ranking data:',error);
+    showToast(error.message||'Error loading ranking','err');
+    return false;
+  }
 }
 
 // ─── SAVE PREDICTION ──────────────────────────────────────────────────────────
+function scheduleSavePred(inp){
+  const key=`${inp.dataset.mid}:${inp.dataset.side}`;
+  clearTimeout(predictionSaveTimers[key]);
+  predictionSaveTimers[key]=setTimeout(()=>savePred(inp),500);
+}
+
+function flushSavePred(inp){
+  const key=`${inp.dataset.mid}:${inp.dataset.side}`;
+  clearTimeout(predictionSaveTimers[key]);
+  delete predictionSaveTimers[key];
+  savePred(inp);
+}
+
 async function savePred(inp){
   const mid=inp.dataset.mid,side=inp.dataset.side;
   const val=inp.value.trim();
@@ -524,9 +541,10 @@ async function savePred(inp){
   updateBadge(inp.closest('.card'),mid,currentUser.id);
   // Save to Supabase — first check if row exists, then update or insert
   const pred=allPredictions[currentUser.id][mid];
-  const{data:existing}=await sb.from('predictions').select('id').eq('user_id',currentUser.id).eq('match_id',mid).maybeSingle();
+  const{data:existing,error:selectError}=await sb.from('predictions').select('id').eq('user_id',currentUser.id).eq('match_id',mid).limit(1);
+  if(selectError){showSaveError(selectError);return;}
   let error;
-  if(existing){
+  if(existing&&existing.length){
     ({error}=await sb.from('predictions').update({
       home_score:pred.h,
       away_score:pred.a,
@@ -541,7 +559,8 @@ async function savePred(inp){
       updated_at:new Date().toISOString()
     }));
   }
-  if(!error)showToast(t('saved'));
+  if(error){showSaveError(error);return;}
+  showToast(t('saved'));
 }
 
 async function saveElimPred(inp){
@@ -620,10 +639,10 @@ function matchCard(m){
       <span class="team"><span style="margin-right:4px">${fh}</span>${m.home}</span>
       <div class="score-wrap">
         <input type="number" min="0" max="20" value="${pred.h!==null?pred.h:''}" placeholder="?"
-          data-mid="${m.id}" data-side="h" onfocus="guardPredictionFocus(this)" onblur="savePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
+          data-mid="${m.id}" data-side="h" onfocus="guardPredictionFocus(this)" oninput="scheduleSavePred(this)" onblur="flushSavePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
         <span class="sep">-</span>
         <input type="number" min="0" max="20" value="${pred.a!==null?pred.a:''}" placeholder="?"
-          data-mid="${m.id}" data-side="a" onfocus="guardPredictionFocus(this)" onblur="savePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
+          data-mid="${m.id}" data-side="a" onfocus="guardPredictionFocus(this)" oninput="scheduleSavePred(this)" onblur="flushSavePred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
       </div>
       <span class="team r">${m.away}<span style="margin-left:4px">${fa}</span></span>
       ${badge}
@@ -971,17 +990,6 @@ window.addEventListener('DOMContentLoaded',async()=>{
       document.getElementById('logout-btn').textContent=t('logout');
       await loadUserData();
       renderFixture();
-      // Auto-refresh every 30s — clear any existing interval first to avoid stacking on token refresh
-      if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
-      autoRefreshInterval=setInterval(async()=>{
-        await refreshActiveData();
-        const activeTab=document.querySelector('.bnav-btn.active');
-        const tabId=activeTab?activeTab.dataset.tab:'fixture';
-        const tabEl=document.getElementById('tab-'+tabId);
-        // Skip re-render if the user is actively typing in an input
-        if(tabEl&&tabEl.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
-        renders[tabId]&&renders[tabId]();
-      },30000);
     }else{
       document.getElementById('main-app').style.display='none';
       document.getElementById('auth-screen').style.display='block';
