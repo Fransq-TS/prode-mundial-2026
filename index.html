@@ -290,6 +290,7 @@ let elimResults={};
 let elimTeams={};
 let saveTimer=null;
 let autoRefreshInterval=null;
+let rankingDataLoaded=false;
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
@@ -406,15 +407,18 @@ async function doLogout(){
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────────────────────────
-async function fetchAllRows(table,select='*'){
+async function fetchAllRows(tableOrQuery,select='*'){
   const pageSize=1000;
   let from=0;
   let rows=[];
+  const getQuery=typeof tableOrQuery==='function'
+    ? tableOrQuery
+    : ()=>sb.from(tableOrQuery).select(select);
   while(true){
-    const{data,error}=await sb.from(table).select(select).range(from,from+pageSize-1);
+    const{data,error}=await getQuery().range(from,from+pageSize-1);
     if(error){
-      console.error(`Error loading ${table}:`,error);
-      showToast(error.message||`Error loading ${table}`,'err');
+      console.error('Error loading data:',error);
+      showToast(error.message||'Error loading data','err');
       return rows;
     }
     rows=rows.concat(data||[]);
@@ -424,17 +428,7 @@ async function fetchAllRows(table,select='*'){
   return rows;
 }
 
-async function loadAllData(){
-  const[profiles,predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
-    fetchAllRows('profiles'),
-    fetchAllRows('predictions'),
-    fetchAllRows('elim_predictions'),
-    fetchAllRows('results'),
-    fetchAllRows('elim_results'),
-    fetchAllRows('elim_teams'),
-  ]);
-  allProfiles=profiles;
-  // Build predictions map: {userId: {matchId: {h,a}}}
+function buildPredictionMaps(predictions,elimPredictions){
   allPredictions={};
   predictions.forEach(r=>{
     if(!allPredictions[r.user_id])allPredictions[r.user_id]={};
@@ -445,12 +439,48 @@ async function loadAllData(){
     if(!allElimPreds[r.user_id])allElimPreds[r.user_id]={};
     allElimPreds[r.user_id][r.match_id]={h:r.home_score,a:r.away_score};
   });
+}
+
+function buildResultsMaps(groupResults,knockoutResults,knockoutTeams){
   results={};
   groupResults.forEach(r=>{results[r.match_id]={h:r.home_score,a:r.away_score};});
   elimResults={};
   knockoutResults.forEach(r=>{elimResults[r.match_id]={h:r.home_score,a:r.away_score};});
   elimTeams={};
   knockoutTeams.forEach(r=>{elimTeams[r.match_id]={home:r.home_team,away:r.away_team};});
+}
+
+async function loadUserData(){
+  const[predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
+    fetchAllRows(()=>sb.from('predictions').select('*').eq('user_id',currentUser.id)),
+    fetchAllRows(()=>sb.from('elim_predictions').select('*').eq('user_id',currentUser.id)),
+    fetchAllRows('results'),
+    fetchAllRows('elim_results'),
+    fetchAllRows('elim_teams'),
+  ]);
+  allProfiles=currentProfile?[currentProfile]:[];
+  buildPredictionMaps(predictions,elimPredictions);
+  buildResultsMaps(groupResults,knockoutResults,knockoutTeams);
+  rankingDataLoaded=false;
+}
+
+async function loadRankingData(force=false){
+  if(rankingDataLoaded&&!force)return;
+  const[profiles,predictions,elimPredictions]=await Promise.all([
+    fetchAllRows('profiles'),
+    fetchAllRows('predictions'),
+    fetchAllRows('elim_predictions'),
+  ]);
+  allProfiles=profiles;
+  buildPredictionMaps(predictions,elimPredictions);
+  rankingDataLoaded=true;
+}
+
+async function refreshActiveData(){
+  const activeTab=document.querySelector('.bnav-btn.active');
+  const tabId=activeTab?activeTab.dataset.tab:'fixture';
+  await loadUserData();
+  if(tabId==='ranking'||tabId==='admin')await loadRankingData(true);
 }
 
 // ─── SAVE PREDICTION ──────────────────────────────────────────────────────────
@@ -529,16 +559,22 @@ function updateBadge(card,mid,uid){
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
-function showTab(t,btn){
+async function showTab(tabName,btn){
   document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.getElementById('tab-'+t).classList.add('active');
+  const tabEl=document.getElementById('tab-'+tabName);
+  tabEl.classList.add('active');
   if(btn)btn.classList.add('active');
-  renders[t]&&renders[t]();
+  if(tabName==='ranking'){
+    tabEl.innerHTML=`<div class="empty">${t('loading')}</div>`;
+    await loadRankingData();
+  }
+  renders[tabName]&&renders[tabName]();
 }
-function rerender(){
+async function rerender(){
   const activeTab=document.querySelector('.bnav-btn.active');
   const tabId=activeTab?activeTab.dataset.tab:'fixture';
+  if(tabId==='ranking')await loadRankingData();
   renders[tabId]&&renders[tabId]();
   document.querySelector('.nav-groups').textContent=t('groups');
   document.querySelector('.nav-elim').textContent=t('elim');
@@ -712,13 +748,17 @@ function renderAdmin(){
   renderAdminRes();
 }
 
-function switchAdminTab(tab,btn){
+async function switchAdminTab(tab,btn){
   document.querySelectorAll('.atab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   if(tab==='res')renderAdminRes();
   if(tab==='elim')renderAdminElim();
   if(tab==='teams')renderAdminTeams();
-  if(tab==='players')renderAdminPlayers();
+  if(tab==='players'){
+    document.getElementById('admin-body').innerHTML=`<div class="empty">${t('loading')}</div>`;
+    await loadRankingData();
+    renderAdminPlayers();
+  }
 }
 
 function adminMatchCard(m,r,saveFunc){
@@ -909,13 +949,12 @@ window.addEventListener('DOMContentLoaded',async()=>{
       document.querySelector('.nav-groups').textContent=t('groups');
       document.querySelector('.nav-elim').textContent=t('elim');
       document.getElementById('logout-btn').textContent=t('logout');
-      // Load all data
-      await loadAllData();
+      await loadUserData();
       renderFixture();
       // Auto-refresh every 30s — clear any existing interval first to avoid stacking on token refresh
       if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
       autoRefreshInterval=setInterval(async()=>{
-        await loadAllData();
+        await refreshActiveData();
         const activeTab=document.querySelector('.bnav-btn.active');
         const tabId=activeTab?activeTab.dataset.tab:'fixture';
         const tabEl=document.getElementById('tab-'+tabId);
