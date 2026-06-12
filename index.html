@@ -289,6 +289,7 @@ let results={};
 let elimResults={};
 let elimTeams={};
 let saveTimer=null;
+let autoRefreshInterval=null;
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
@@ -397,6 +398,7 @@ async function doRegister(){
 }
 
 async function doLogout(){
+  if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
   await sb.auth.signOut();
   currentUser=null;currentProfile=null;isAdmin=false;
   document.getElementById('main-app').style.display='none';
@@ -863,8 +865,17 @@ window.addEventListener('DOMContentLoaded',async()=>{
       // Load all data
       await loadAllData();
       renderFixture();
-      // Auto-refresh every 30s
-      setInterval(async()=>{await loadAllData();const activeTab=document.querySelector('.bnav-btn.active');const tabId=activeTab?activeTab.dataset.tab:'fixture';renders[tabId]&&renders[tabId]();},30000);
+      // Auto-refresh every 30s — clear any existing interval first to avoid stacking on token refresh
+      if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
+      autoRefreshInterval=setInterval(async()=>{
+        await loadAllData();
+        const activeTab=document.querySelector('.bnav-btn.active');
+        const tabId=activeTab?activeTab.dataset.tab:'fixture';
+        const tabEl=document.getElementById('tab-'+tabId);
+        // Skip re-render if the user is actively typing in an input
+        if(tabEl&&tabEl.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
+        renders[tabId]&&renders[tabId]();
+      },30000);
     }else{
       document.getElementById('main-app').style.display='none';
       document.getElementById('auth-screen').style.display='block';
