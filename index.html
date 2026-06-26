@@ -250,6 +250,27 @@ function applyTheme(){const t=localStorage.getItem('theme')||'dark';if(t==='ligh
 const GROUPS={A:['México','Sudáfrica','Corea del Sur','Rep. Checa'],B:['Canadá','Bosnia','Qatar','Suiza'],C:['Brasil','Marruecos','Haití','Escocia'],D:['EE.UU.','Paraguay','Australia','Turquía'],E:['Alemania','Curazao','Costa de Marfil','Ecuador'],F:['Países Bajos','Japón','Suecia','Túnez'],G:['Bélgica','Egipto','Irán','Nueva Zelanda'],H:['España','Cabo Verde','Arabia Saudita','Uruguay'],I:['Francia','Senegal','Irak','Noruega'],J:['Argentina','Argelia','Austria','Jordania'],K:['Portugal','RD Congo','Uzbekistán','Colombia'],L:['Inglaterra','Croacia','Ghana','Panamá']};
 const FLAGS={México:'🇲🇽',Sudáfrica:'🇿🇦','Corea del Sur':'🇰🇷','Rep. Checa':'🇨🇿',Canadá:'🇨🇦',Bosnia:'🇧🇦',Qatar:'🇶🇦',Suiza:'🇨🇭',Brasil:'🇧🇷',Marruecos:'🇲🇦',Haití:'🇭🇹',Escocia:'🏴󠁧󠁢󠁳󠁣󠁴󠁿','EE.UU.':'🇺🇸',Paraguay:'🇵🇾',Australia:'🇦🇺',Turquía:'🇹🇷',Alemania:'🇩🇪',Curazao:'🇨🇼','Costa de Marfil':'🇨🇮',Ecuador:'🇪🇨','Países Bajos':'🇳🇱',Japón:'🇯🇵',Suecia:'🇸🇪',Túnez:'🇹🇳',Bélgica:'🇧🇪',Egipto:'🇪🇬',Irán:'🇮🇷','Nueva Zelanda':'🇳🇿',España:'🇪🇸','Cabo Verde':'🇨🇻','Arabia Saudita':'🇸🇦',Uruguay:'🇺🇾',Francia:'🇫🇷',Senegal:'🇸🇳',Irak:'🇮🇶',Noruega:'🇳🇴',Argentina:'🇦🇷',Argelia:'🇩🇿',Austria:'🇦🇹',Jordania:'🇯🇴',Portugal:'🇵🇹','RD Congo':'🇨🇩',Uzbekistán:'🇺🇿',Colombia:'🇨🇴',Inglaterra:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',Croacia:'🇭🇷',Ghana:'🇬🇭',Panamá:'🇵🇦'};
 const ELIM_ROUNDS=[{id:'r32',label:'16avos',matches:16,pe:4,pr:2},{id:'r16',label:'Octavos',matches:8,pe:5,pr:2},{id:'qf',label:'Cuartos',matches:4,pe:6,pr:3},{id:'sf',label:'Semis',matches:2,pe:7,pr:3},{id:'tp',label:'3er puesto',matches:1,pe:5,pr:2},{id:'final',label:'Final',matches:1,pe:10,pr:5}];
+const SEED=(rank,group)=>({rank,group});
+const THIRD=(groups)=>({rank:3,groups});
+const R32_MATCHUPS=[
+  {no:73,home:SEED(2,'A'),away:SEED(2,'B')},
+  {no:75,home:SEED(1,'F'),away:SEED(2,'C')},
+  {no:74,home:SEED(1,'E'),away:THIRD(['A','B','C','D','F'])},
+  {no:77,home:SEED(1,'I'),away:THIRD(['C','D','F','G','H'])},
+  {no:76,home:SEED(1,'C'),away:SEED(2,'F')},
+  {no:78,home:SEED(2,'E'),away:SEED(2,'I')},
+  {no:79,home:SEED(1,'A'),away:THIRD(['C','E','F','H','I'])},
+  {no:80,home:SEED(1,'L'),away:THIRD(['E','H','I','J','K'])},
+  {no:83,home:SEED(2,'K'),away:SEED(2,'L')},
+  {no:84,home:SEED(1,'H'),away:SEED(2,'J')},
+  {no:81,home:SEED(1,'D'),away:THIRD(['B','E','F','I','J'])},
+  {no:82,home:SEED(1,'G'),away:THIRD(['A','E','H','I','J'])},
+  {no:86,home:SEED(1,'J'),away:SEED(2,'H')},
+  {no:88,home:SEED(2,'D'),away:SEED(2,'G')},
+  {no:85,home:SEED(1,'B'),away:THIRD(['E','F','G','I','J'])},
+  {no:87,home:SEED(1,'K'),away:THIRD(['D','E','I','J','L'])},
+];
+const ELIM_MATCH_NUMBERS={r32:R32_MATCHUPS.map(m=>m.no),r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],tp:[103],final:[104]};
 const ROUND_LABELS={
   es:{r32:'Eliminatoria de 32',r16:'Octavos de final',qf:'Cuartos de final',sf:'Semifinales',tp:'3er puesto',final:'Final'},
   en:{r32:'Round of 32',r16:'Round of 16',qf:'Quarterfinals',sf:'Semifinals',tp:'Third place',final:'Final'}
@@ -417,6 +438,27 @@ function showToast(msg,type='ok'){const el=document.getElementById('toast');el.t
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function roundLabel(round){return ROUND_LABELS[lang]?.[round.id]||round.label;}
 function elimExactText(round){return lang==='es'?`+${round.pe} exacto ${roundLabel(round)}`:`+${round.pe} exact ${roundLabel(round)}`;}
+function elimMatchNumber(round,i){return ELIM_MATCH_NUMBERS[round.id]?.[i]||i+1;}
+function seedText(seed){
+  const suffix=lang==='es'?'Grupo':'Group';
+  if(seed.groups)return `${seed.rank}${lang==='es'?'°':'rd'} ${suffix} ${seed.groups.join('/')}`;
+  const rank=seed.rank===1?(lang==='es'?'1°':'1st'):(lang==='es'?'2°':'2nd');
+  return `${rank} ${suffix} ${seed.group}`;
+}
+function fallbackElimTeams(round,i){
+  if(round.id!=='r32')return {home:t('to_define'),away:t('to_define')};
+  const matchup=R32_MATCHUPS[i];
+  if(!matchup)return {home:t('to_define'),away:t('to_define')};
+  return {home:seedText(matchup.home),away:seedText(matchup.away)};
+}
+function elimDisplayTeams(round,i,mid){
+  const fallback=fallbackElimTeams(round,i);
+  const saved=elimTeams[mid]||{};
+  return {
+    home:saved.home||fallback.home,
+    away:saved.away||fallback.away
+  };
+}
 function elimBadge(round,pred,real){
   if(!real||pred.h===null||pred.a===null||real.h===null||real.a===null)return '';
   const pr=getResult(pred.h,pred.a),rr=getResult(real.h,real.a);
@@ -794,13 +836,13 @@ function renderElim(){
     const mid=`${round.id}_${i}`;
     const pred=allElimPreds[currentUser.id]?.[mid]||{h:null,a:null};
     const real=elimResults[mid];
-    const teams=elimTeams[mid]||{home:t('to_define'),away:t('to_define')};
+    const teams=elimDisplayTeams(round,i,mid);
     const home=teams.home||t('to_define'),away=teams.away||t('to_define');
     const badge=elimBadge(round,pred,real);
     const compact=`${home} / ${away}`;
     return`<div class="card bracket-card ${extraClass}" style="--idx:${i};--pair:${Math.floor(i/2)};--side:${i%2}" data-round-index="${roundIdx}" data-match-index="${i}">
       <div class="bracket-summary">${esc(compact)}</div>
-      <div class="bracket-meta">${esc(roundLabel(round))} · ${t('match')} ${i+1}${badge}</div>
+      <div class="bracket-meta">${esc(roundLabel(round))} · ${t('match')} ${elimMatchNumber(round,i)}${badge}</div>
       <label class="bracket-team">
         <span class="bracket-team-name">${esc(home)}</span>
         <input type="number" min="0" max="20" value="${pred.h!==null?esc(pred.h):''}" placeholder="?"
@@ -1033,10 +1075,10 @@ function renderAdminElim(){
     for(let i=0;i<round.matches;i++){
       const mid=`${round.id}_${i}`;
       const r=elimResults[mid];
-      const teams=elimTeams[mid]||{home:t('to_define'),away:t('to_define')};
+      const teams=elimDisplayTeams(round,i,mid);
       const fh=FLAGS[teams.home]||'',fa=FLAGS[teams.away]||'';
       html+=`<div class="card">
-        <div class="match-meta">${round.label} · ${t('match')} ${i+1}</div>
+        <div class="match-meta">${round.label} · ${t('match')} ${elimMatchNumber(round,i)}</div>
         <div class="match-row">
           <span class="team" style="font-size:11px">${fh} ${teams.home}</span>
           <div class="score-wrap">
@@ -1061,14 +1103,15 @@ function renderAdminTeams(){
     for(let i=0;i<round.matches;i++){
       const mid=`${round.id}_${i}`;
       const teams=elimTeams[mid]||{home:'',away:''};
+      const fallback=fallbackElimTeams(round,i);
       html+=`<div class="card">
-        <div class="match-meta">${round.label} · ${t('match')} ${i+1}</div>
+        <div class="match-meta">${round.label} · ${t('match')} ${elimMatchNumber(round,i)}</div>
         <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
-          <input type="text" value="${teams.home}" placeholder="${t('to_define')}" maxlength="20"
+          <input type="text" value="${esc(teams.home)}" placeholder="${esc(fallback.home)}" maxlength="20"
             style="flex:1;height:30px;padding:0 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:inherit;font-size:11px"
             data-mid="${mid}" data-side="home" onchange="saveElimTeam(this)" ${isAdmin?'':'disabled'}>
           <span style="color:var(--text3);font-size:11px">vs</span>
-          <input type="text" value="${teams.away}" placeholder="${t('to_define')}" maxlength="20"
+          <input type="text" value="${esc(teams.away)}" placeholder="${esc(fallback.away)}" maxlength="20"
             style="flex:1;height:30px;padding:0 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:inherit;font-size:11px"
             data-mid="${mid}" data-side="away" onchange="saveElimTeam(this)" ${isAdmin?'':'disabled'}>
         </div>
