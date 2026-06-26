@@ -114,9 +114,15 @@ select:focus{outline:none;border-color:var(--green)}
 .bracket-scroll{overflow:hidden;padding:2px 16px 22px 0;overscroll-behavior-x:none;touch-action:pan-y}
 .bracket-board{display:flex;gap:44px;align-items:flex-start;min-width:max-content;transform:translateX(calc(-1 * var(--bracket-shift, 0px)));transition:transform .42s cubic-bezier(.2,.8,.2,1)}
 .bracket-round{--col-w:280px;--card-h:112px;position:relative;width:var(--col-w);flex:0 0 var(--col-w)}
+.bracket-titlebar{height:30px;display:grid;grid-template-columns:32px minmax(0,1fr) 32px;align-items:center;gap:4px}
 .bracket-title{width:100%;height:30px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;font-family:inherit;cursor:pointer;border-radius:8px;transition:color .15s,background .15s}
 .bracket-title:hover{background:var(--bg3);color:var(--text)}
 .bracket-round.is-active .bracket-title{color:var(--green)}
+.bracket-nav{width:32px;height:30px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:20px;line-height:1;font-family:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .16s,background .16s,border-color .16s,color .16s}
+.bracket-nav:hover{background:var(--bg3);border-color:var(--green-dim);color:var(--green)}
+.bracket-nav:disabled{opacity:0;cursor:default}
+.bracket-round.is-active .bracket-nav{opacity:1;pointer-events:auto}
+.bracket-round.is-active .bracket-nav:disabled{opacity:.22;pointer-events:none}
 .bracket-stack{position:relative;height:calc(var(--slot) * var(--matches))}
 .bracket-card{position:absolute;top:calc((var(--slot) * var(--idx)) + ((var(--slot) - var(--card-h)) / 2));left:0;width:100%;height:var(--card-h);margin:0;border-radius:8px;padding:12px;background:var(--bg2);border-color:var(--border2);display:flex;flex-direction:column;justify-content:center;gap:8px;transform-origin:center;transition:top .34s ease,height .34s ease,width .34s ease,padding .34s ease,opacity .22s ease,transform .34s ease,border-color .22s ease,box-shadow .22s ease}
 .bracket-round.is-collapsing .bracket-card,.bracket-round.is-before .bracket-card{top:calc((var(--slot) * ((var(--pair) * 2) + 1)) + (var(--side) * 44px) - 37px);width:100%;height:30px;padding:0 12px;opacity:.82;gap:0}
@@ -145,6 +151,8 @@ select:focus{outline:none;border-color:var(--green)}
   body[data-tab="elim"] .topbar{position:sticky}
   #tab-elim.section{padding-left:12px}
   .bracket-round{--col-w:246px;--card-h:106px}
+  .bracket-titlebar{grid-template-columns:30px minmax(0,1fr) 30px;gap:3px}
+  .bracket-nav{width:30px}
   .bracket-board{gap:34px}
   .bracket-connector{width:34px}
   .bracket-connector .c-top,.bracket-connector .c-bottom{width:17px}
@@ -812,8 +820,14 @@ function renderElim(){
   mainRounds.forEach((round,ri)=>{
     const slot=elimRoundSlot(ri);
     const stateClass=ri<elimActiveRound?'is-before':ri===elimActiveRound?'is-active':'is-after';
+    const prevDisabled=ri===0?'disabled':'';
+    const nextDisabled=ri===mainRounds.length-1?'disabled':'';
     html+=`<section class="bracket-round ${stateClass}" data-round-index="${ri}" style="--slot:${slot}px;--matches:${round.matches}">
-      <button class="bracket-title" type="button" onclick="handleBracketRoundClick(${ri})">${esc(roundLabel(round))}</button>
+      <div class="bracket-titlebar">
+        <button class="bracket-nav bracket-nav-prev" type="button" ${prevDisabled} aria-label="${lang==='es'?'Ronda anterior':'Previous round'}" onclick="moveBracketRound(-1)">&lsaquo;</button>
+        <button class="bracket-title" type="button" onclick="handleBracketRoundClick(${ri})">${esc(roundLabel(round))}</button>
+        <button class="bracket-nav bracket-nav-next" type="button" ${nextDisabled} aria-label="${lang==='es'?'Ronda siguiente':'Next round'}" onclick="moveBracketRound(1)">&rsaquo;</button>
+      </div>
       <div class="bracket-stack">`;
     for(let i=0;i<round.matches;i++)html+=matchCard(round,i,ri,round.id==='final'?'is-final':'');
     if(ri<mainRounds.length-1){
@@ -905,6 +919,12 @@ async function handleBracketRoundClick(idx){
   }
   elimActiveRound=idx;
   applyBracketFocus();
+}
+
+function moveBracketRound(delta){
+  const maxIdx=ELIM_ROUNDS.filter(r=>r.id!=='tp').length-1;
+  const nextIdx=Math.max(0,Math.min(maxIdx,elimActiveRound+delta));
+  handleBracketRoundClick(nextIdx);
 }
 
 // ─── RANKING ──────────────────────────────────────────────────────────────────
