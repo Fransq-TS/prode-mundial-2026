@@ -339,6 +339,7 @@ let saveTimer=null;
 let rankingDataLoaded=false;
 let predictionSaveTimers={};
 let elimActiveRound=0;
+const ELIM_BASE_SLOT=132;
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
@@ -782,7 +783,6 @@ function renderFixture(){
 function renderElim(){
   const el=document.getElementById('tab-elim');
   const mainRounds=ELIM_ROUNDS.filter(r=>r.id!=='tp');
-  const baseSlot=132;
   const matchCard=(round,i,roundIdx,extraClass='')=>{
     const mid=`${round.id}_${i}`;
     const pred=allElimPreds[currentUser.id]?.[mid]||{h:null,a:null};
@@ -810,7 +810,7 @@ function renderElim(){
   mainRounds.forEach(r=>{html+=`<span class="legend-item"><strong>+${r.pe}</strong> ${esc(elimExactText(r)).replace(`+${r.pe} `,'')}</span>`;});
   html+=`</div><div class="note">${t('elim_note')}</div></div><div class="bracket-scroll"><div class="bracket-board">`;
   mainRounds.forEach((round,ri)=>{
-    const slot=baseSlot*Math.pow(2,ri);
+    const slot=elimRoundSlot(ri);
     const stateClass=ri<elimActiveRound?'is-before':ri===elimActiveRound?'is-active':'is-after';
     html+=`<section class="bracket-round ${stateClass}" data-round-index="${ri}" style="--slot:${slot}px;--matches:${round.matches}">
       <button class="bracket-title" type="button" onclick="handleBracketRoundClick(${ri})">${esc(roundLabel(round))}</button>
@@ -835,6 +835,19 @@ function renderElim(){
   el.innerHTML=html;
 }
 
+function elimRoundSlot(idx){
+  const delta=idx-elimActiveRound;
+  if(delta>=0)return ELIM_BASE_SLOT*Math.pow(2,delta);
+  return Math.max(24,ELIM_BASE_SLOT/Math.pow(2,Math.abs(delta)));
+}
+
+function updateBracketSlots(){
+  document.querySelectorAll('#tab-elim .bracket-round').forEach(round=>{
+    const idx=parseInt(round.dataset.roundIndex,10);
+    round.style.setProperty('--slot',`${elimRoundSlot(idx)}px`);
+  });
+}
+
 function applyBracketFocus(){
   document.querySelectorAll('#tab-elim .bracket-round').forEach(round=>{
     const idx=parseInt(round.dataset.roundIndex,10);
@@ -842,27 +855,36 @@ function applyBracketFocus(){
     round.classList.toggle('is-active',idx===elimActiveRound);
     round.classList.toggle('is-after',idx>elimActiveRound);
   });
+  updateBracketSlots();
 }
 
-function scrollBracketRoundIntoView(idx){
+function scrollBracketRoundIntoView(idx,behavior='smooth'){
   const scroller=document.querySelector('#tab-elim .bracket-scroll');
   const round=document.querySelector(`#tab-elim .bracket-round[data-round-index="${idx}"]`);
   if(!scroller||!round)return;
   const left=Math.max(0,round.offsetLeft-12);
-  scroller.scrollTo({left,behavior:'smooth'});
+  scroller.scrollTo({left,behavior});
 }
 
 async function animateRoundAdvance(fromIdx,toIdx){
-  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
   const fromRound=document.querySelector(`#tab-elim .bracket-round[data-round-index="${fromIdx}"]`);
   const toCards=[...document.querySelectorAll(`#tab-elim .bracket-card[data-round-index="${toIdx}"]`)];
   if(!fromRound||!toCards.length)return;
   fromRound.classList.add('is-collapsing');
-  await new Promise(resolve=>setTimeout(resolve,360));
+  elimActiveRound=toIdx;
+  requestAnimationFrame(()=>{
+    applyBracketFocus();
+    scrollBracketRoundIntoView(toIdx,window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth');
+  });
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+    fromRound.classList.remove('is-collapsing');
+    return;
+  }
+  await new Promise(resolve=>setTimeout(resolve,120));
   toCards.forEach((target,targetIdx)=>{
     target.classList.add('merge-target');
   });
-  await new Promise(resolve=>setTimeout(resolve,220));
+  await new Promise(resolve=>setTimeout(resolve,360));
   toCards.forEach(target=>target.classList.remove('merge-target'));
   fromRound.classList.remove('is-collapsing');
 }
@@ -873,9 +895,6 @@ async function handleBracketRoundClick(idx){
   if(idx>previous){
     for(let step=previous+1;step<=idx;step++){
       await animateRoundAdvance(step-1,step);
-      elimActiveRound=step;
-      applyBracketFocus();
-      scrollBracketRoundIntoView(step);
     }
     return;
   }
