@@ -28,6 +28,7 @@ body.light{
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .app{max-width:640px;margin:0 auto;padding:0 0 80px}
+body[data-tab="elim"] .app{max-width:none}
 .topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:10px}
 .topbar-logo{font-size:20px}
 .topbar-title{font-size:14px;font-weight:600;letter-spacing:-.02em}
@@ -108,6 +109,48 @@ select:focus{outline:none;border-color:var(--green)}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading{text-align:center;padding:40px;color:var(--text3)}
+.elim-head{padding-right:16px}
+#tab-elim.section{padding-right:0}
+.bracket-scroll{overflow-x:auto;overflow-y:hidden;padding:2px 16px 22px 0;scrollbar-color:var(--border2) transparent}
+.bracket-board{display:flex;gap:44px;align-items:flex-start;min-width:max-content}
+.bracket-round{--col-w:280px;--card-h:112px;position:relative;width:var(--col-w);flex:0 0 var(--col-w)}
+.bracket-title{width:100%;height:30px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;font-family:inherit;cursor:pointer;border-radius:8px;transition:color .15s,background .15s}
+.bracket-title:hover{background:var(--bg3);color:var(--text)}
+.bracket-round.is-active .bracket-title{color:var(--green)}
+.bracket-stack{position:relative;height:calc(var(--slot) * var(--matches))}
+.bracket-card{position:absolute;top:calc((var(--slot) * var(--idx)) + ((var(--slot) - var(--card-h)) / 2));left:0;width:100%;height:var(--card-h);margin:0;border-radius:8px;padding:12px;background:var(--bg2);border-color:var(--border2);display:flex;flex-direction:column;justify-content:center;gap:8px;transform-origin:center;transition:top .34s ease,height .34s ease,width .34s ease,padding .34s ease,opacity .22s ease,transform .34s ease,border-color .22s ease,box-shadow .22s ease}
+.bracket-round.is-collapsing .bracket-card,.bracket-round.is-before .bracket-card{top:calc((var(--slot) * ((var(--pair) * 2) + 1)) + (var(--side) * 44px) - 37px);width:100%;height:30px;padding:0 12px;opacity:.82;gap:0}
+.bracket-round.is-after .bracket-card{opacity:.72}
+.bracket-card.merge-target{border-color:var(--green);box-shadow:0 0 0 1px var(--green-dim)}
+.bracket-card.is-final{border-color:var(--green)}
+.bracket-meta{font-size:10px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:8px;min-height:14px}
+.bracket-meta .badge{margin-left:auto}
+.bracket-team{display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:center;gap:8px}
+.bracket-team-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bracket-summary{display:none;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bracket-round.is-collapsing .bracket-meta,.bracket-round.is-before .bracket-meta,.bracket-round.is-collapsing .bracket-team,.bracket-round.is-before .bracket-team{display:none}
+.bracket-round.is-collapsing .bracket-summary,.bracket-round.is-before .bracket-summary{display:block}
+.bracket-team input{width:34px;height:28px;text-align:center;font-size:14px;font-weight:700;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:inherit;-moz-appearance:textfield}
+.bracket-team input::-webkit-inner-spin-button,.bracket-team input::-webkit-outer-spin-button{-webkit-appearance:none}
+.bracket-team input:focus{outline:none;border-color:var(--green)}
+.bracket-connector{position:absolute;left:100%;top:calc(var(--slot) * ((var(--pair) * 2) + .5));width:44px;height:var(--slot);pointer-events:none;color:var(--border2)}
+.bracket-connector span{position:absolute;background:currentColor}
+.bracket-connector .c-top{left:0;top:0;width:22px;height:1px}
+.bracket-connector .c-bottom{left:0;bottom:0;width:22px;height:1px}
+.bracket-connector .c-vert{left:22px;top:0;width:1px;height:100%}
+.bracket-connector .c-mid{left:22px;top:50%;width:22px;height:1px}
+.bracket-round.is-before .bracket-connector,.bracket-round.is-collapsing .bracket-connector{left:100%;top:calc((var(--slot) * ((var(--pair) * 2) + 1)) - 22px);width:44px;height:44px;opacity:.58}
+.third-place{max-width:280px;margin-top:18px}
+@media(max-width:720px){
+  body[data-tab="elim"] .topbar{position:sticky}
+  #tab-elim.section{padding-left:12px}
+  .bracket-round{--col-w:246px;--card-h:106px}
+  .bracket-board{gap:34px}
+  .bracket-connector{width:34px}
+  .bracket-connector .c-top,.bracket-connector .c-bottom{width:17px}
+  .bracket-connector .c-vert{left:17px}
+  .bracket-connector .c-mid{left:17px;width:17px}
+}
 </style>
 </head>
 <body>
@@ -200,6 +243,10 @@ function applyTheme(){const t=localStorage.getItem('theme')||'dark';if(t==='ligh
 const GROUPS={A:['México','Sudáfrica','Corea del Sur','Rep. Checa'],B:['Canadá','Bosnia','Qatar','Suiza'],C:['Brasil','Marruecos','Haití','Escocia'],D:['EE.UU.','Paraguay','Australia','Turquía'],E:['Alemania','Curazao','Costa de Marfil','Ecuador'],F:['Países Bajos','Japón','Suecia','Túnez'],G:['Bélgica','Egipto','Irán','Nueva Zelanda'],H:['España','Cabo Verde','Arabia Saudita','Uruguay'],I:['Francia','Senegal','Irak','Noruega'],J:['Argentina','Argelia','Austria','Jordania'],K:['Portugal','RD Congo','Uzbekistán','Colombia'],L:['Inglaterra','Croacia','Ghana','Panamá']};
 const FLAGS={México:'🇲🇽',Sudáfrica:'🇿🇦','Corea del Sur':'🇰🇷','Rep. Checa':'🇨🇿',Canadá:'🇨🇦',Bosnia:'🇧🇦',Qatar:'🇶🇦',Suiza:'🇨🇭',Brasil:'🇧🇷',Marruecos:'🇲🇦',Haití:'🇭🇹',Escocia:'🏴󠁧󠁢󠁳󠁣󠁴󠁿','EE.UU.':'🇺🇸',Paraguay:'🇵🇾',Australia:'🇦🇺',Turquía:'🇹🇷',Alemania:'🇩🇪',Curazao:'🇨🇼','Costa de Marfil':'🇨🇮',Ecuador:'🇪🇨','Países Bajos':'🇳🇱',Japón:'🇯🇵',Suecia:'🇸🇪',Túnez:'🇹🇳',Bélgica:'🇧🇪',Egipto:'🇪🇬',Irán:'🇮🇷','Nueva Zelanda':'🇳🇿',España:'🇪🇸','Cabo Verde':'🇨🇻','Arabia Saudita':'🇸🇦',Uruguay:'🇺🇾',Francia:'🇫🇷',Senegal:'🇸🇳',Irak:'🇮🇶',Noruega:'🇳🇴',Argentina:'🇦🇷',Argelia:'🇩🇿',Austria:'🇦🇹',Jordania:'🇯🇴',Portugal:'🇵🇹','RD Congo':'🇨🇩',Uzbekistán:'🇺🇿',Colombia:'🇨🇴',Inglaterra:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',Croacia:'🇭🇷',Ghana:'🇬🇭',Panamá:'🇵🇦'};
 const ELIM_ROUNDS=[{id:'r32',label:'16avos',matches:16,pe:4,pr:2},{id:'r16',label:'Octavos',matches:8,pe:5,pr:2},{id:'qf',label:'Cuartos',matches:4,pe:6,pr:3},{id:'sf',label:'Semis',matches:2,pe:7,pr:3},{id:'tp',label:'3er puesto',matches:1,pe:5,pr:2},{id:'final',label:'Final',matches:1,pe:10,pr:5}];
+const ROUND_LABELS={
+  es:{r32:'Eliminatoria de 32',r16:'Octavos de final',qf:'Cuartos de final',sf:'Semifinales',tp:'3er puesto',final:'Final'},
+  en:{r32:'Round of 32',r16:'Round of 16',qf:'Quarterfinals',sf:'Semifinals',tp:'Third place',final:'Final'}
+};
 const MATCHES=[
   {id:'A01',group:'A',home:'México',away:'Sudáfrica',date:'11/06',time:'15:00',iso:'2026-06-11T15:00'},
   {id:'A23',group:'A',home:'Corea del Sur',away:'Rep. Checa',date:'11/06',time:'22:00',iso:'2026-06-11T22:00'},
@@ -291,6 +338,7 @@ let elimTeams={};
 let saveTimer=null;
 let rankingDataLoaded=false;
 let predictionSaveTimers={};
+let elimActiveRound=0;
 
 // ─── LOCK ─────────────────────────────────────────────────────────────────────
 function isLocked(match){
@@ -358,6 +406,16 @@ function isPastMatchDate(date){return matchDateSortValue(date)<matchDateSortValu
 function sortedMatchDates(){return [...new Set(MATCHES.map(m=>m.date))].sort(compareMatchDatesByTimeline);}
 let toastT;
 function showToast(msg,type='ok'){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show '+(type==='err'?'err':'ok');clearTimeout(toastT);toastT=setTimeout(()=>el.className='toast',2500);}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function roundLabel(round){return ROUND_LABELS[lang]?.[round.id]||round.label;}
+function elimExactText(round){return lang==='es'?`+${round.pe} exacto ${roundLabel(round)}`:`+${round.pe} exact ${roundLabel(round)}`;}
+function elimBadge(round,pred,real){
+  if(!real||pred.h===null||pred.a===null||real.h===null||real.a===null)return '';
+  const pr=getResult(pred.h,pred.a),rr=getResult(real.h,real.a);
+  if(pred.h==real.h&&pred.a==real.a)return `<span class="badge b-exact">+${round.pe}</span>`;
+  if(pr===rr)return `<span class="badge b-res">+${round.pr}</span>`;
+  return `<span class="badge b-miss">✗</span>`;
+}
 
 function calcPoints(uid){
   let pts=0,exact=0,res=0,miss=0;
@@ -617,6 +675,7 @@ function updateBadge(card,mid,uid){
 async function showTab(tabName,btn){
   document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.body.dataset.tab=tabName;
   const tabEl=document.getElementById('tab-'+tabName);
   tabEl.classList.add('active');
   if(btn)btn.classList.add('active');
@@ -722,42 +781,107 @@ function renderFixture(){
 // ─── ELIMINATORIA ─────────────────────────────────────────────────────────────
 function renderElim(){
   const el=document.getElementById('tab-elim');
-  let html=`<div class="legend">`;
-  ELIM_ROUNDS.forEach(r=>{html+=`<span class="legend-item"><strong>+${r.pe}</strong> exacto ${r.label}</span>`;});
-  html+=`</div><div class="note">${t('elim_note')}</div>`;
-  ELIM_ROUNDS.forEach(round=>{
-    html+=`<div class="group-hdr">${round.label}</div>`;
-    for(let i=0;i<round.matches;i++){
-      const mid=`${round.id}_${i}`;
-      const pred=allElimPreds[currentUser.id]?.[mid]||{h:null,a:null};
-      const real=elimResults[mid];
-      const teams=elimTeams[mid]||{home:t('to_define'),away:t('to_define')};
-      let badge='';
-      if(real&&pred.h!==null&&pred.a!==null&&real.h!==null&&real.a!==null){
-        const pr=getResult(pred.h,pred.a),rr=getResult(real.h,real.a);
-        if(pred.h==real.h&&pred.a==real.a)badge=`<span class="badge b-exact">+${round.pe}</span>`;
-        else if(pr===rr)badge=`<span class="badge b-res">+${round.pr}</span>`;
-        else badge=`<span class="badge b-miss">✗</span>`;
+  const mainRounds=ELIM_ROUNDS.filter(r=>r.id!=='tp');
+  const baseSlot=132;
+  const matchCard=(round,i,roundIdx,extraClass='')=>{
+    const mid=`${round.id}_${i}`;
+    const pred=allElimPreds[currentUser.id]?.[mid]||{h:null,a:null};
+    const real=elimResults[mid];
+    const teams=elimTeams[mid]||{home:t('to_define'),away:t('to_define')};
+    const home=teams.home||t('to_define'),away=teams.away||t('to_define');
+    const badge=elimBadge(round,pred,real);
+    const compact=`${home} / ${away}`;
+    return`<div class="card bracket-card ${extraClass}" style="--idx:${i};--pair:${Math.floor(i/2)};--side:${i%2}" data-round-index="${roundIdx}" data-match-index="${i}">
+      <div class="bracket-summary">${esc(compact)}</div>
+      <div class="bracket-meta">${esc(roundLabel(round))} · ${t('match')} ${i+1}${badge}</div>
+      <label class="bracket-team">
+        <span class="bracket-team-name">${esc(home)}</span>
+        <input type="number" min="0" max="20" value="${pred.h!==null?esc(pred.h):''}" placeholder="?"
+          data-mid="${mid}" data-side="h" onblur="saveElimPred(this)">
+      </label>
+      <label class="bracket-team">
+        <span class="bracket-team-name">${esc(away)}</span>
+        <input type="number" min="0" max="20" value="${pred.a!==null?esc(pred.a):''}" placeholder="?"
+          data-mid="${mid}" data-side="a" onblur="saveElimPred(this)">
+      </label>
+    </div>`;
+  };
+  let html=`<div class="elim-head"><div class="legend">`;
+  mainRounds.forEach(r=>{html+=`<span class="legend-item"><strong>+${r.pe}</strong> ${esc(elimExactText(r)).replace(`+${r.pe} `,'')}</span>`;});
+  html+=`</div><div class="note">${t('elim_note')}</div></div><div class="bracket-scroll"><div class="bracket-board">`;
+  mainRounds.forEach((round,ri)=>{
+    const slot=baseSlot*Math.pow(2,ri);
+    const stateClass=ri<elimActiveRound?'is-before':ri===elimActiveRound?'is-active':'is-after';
+    html+=`<section class="bracket-round ${stateClass}" data-round-index="${ri}" style="--slot:${slot}px;--matches:${round.matches}">
+      <button class="bracket-title" type="button" onclick="handleBracketRoundClick(${ri})">${esc(roundLabel(round))}</button>
+      <div class="bracket-stack">`;
+    for(let i=0;i<round.matches;i++)html+=matchCard(round,i,ri,round.id==='final'?'is-final':'');
+    if(ri<mainRounds.length-1){
+      const pairs=mainRounds[ri+1].matches;
+      for(let p=0;p<pairs;p++){
+        html+=`<div class="bracket-connector" style="--pair:${p}"><span class="c-top"></span><span class="c-bottom"></span><span class="c-vert"></span><span class="c-mid"></span></div>`;
       }
-      const fh=FLAGS[teams.home]||'',fa=FLAGS[teams.away]||'';
-      html+=`<div class="card">
-        <div class="match-meta">${round.label} · ${t('match')} ${i+1}</div>
-        <div class="match-row">
-          <span class="team" style="font-size:11px">${fh} ${teams.home}</span>
-          <div class="score-wrap">
-            <input type="number" min="0" max="20" value="${pred.h!==null?pred.h:''}" placeholder="?"
-              data-mid="${mid}" data-side="h" onblur="saveElimPred(this)">
-            <span class="sep">-</span>
-            <input type="number" min="0" max="20" value="${pred.a!==null?pred.a:''}" placeholder="?"
-              data-mid="${mid}" data-side="a" onblur="saveElimPred(this)">
-          </div>
-          <span class="team r" style="font-size:11px">${teams.away} ${fa}</span>
-          ${badge}
-        </div>
-      </div>`;
     }
+    html+=`</div></section>`;
   });
+  html+=`</div></div>`;
+  const thirdPlace=ELIM_ROUNDS.find(r=>r.id==='tp');
+  if(thirdPlace){
+    html+=`<div class="third-place">
+      <div class="group-hdr">${esc(roundLabel(thirdPlace))}</div>
+      <div style="position:relative;height:112px;--slot:112px;--matches:1">${matchCard(thirdPlace,0,mainRounds.length)}</div>
+    </div>`;
+  }
   el.innerHTML=html;
+}
+
+function applyBracketFocus(){
+  document.querySelectorAll('#tab-elim .bracket-round').forEach(round=>{
+    const idx=parseInt(round.dataset.roundIndex,10);
+    round.classList.toggle('is-before',idx<elimActiveRound);
+    round.classList.toggle('is-active',idx===elimActiveRound);
+    round.classList.toggle('is-after',idx>elimActiveRound);
+  });
+}
+
+function scrollBracketRoundIntoView(idx){
+  const scroller=document.querySelector('#tab-elim .bracket-scroll');
+  const round=document.querySelector(`#tab-elim .bracket-round[data-round-index="${idx}"]`);
+  if(!scroller||!round)return;
+  const left=Math.max(0,round.offsetLeft-12);
+  scroller.scrollTo({left,behavior:'smooth'});
+}
+
+async function animateRoundAdvance(fromIdx,toIdx){
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+  const fromRound=document.querySelector(`#tab-elim .bracket-round[data-round-index="${fromIdx}"]`);
+  const toCards=[...document.querySelectorAll(`#tab-elim .bracket-card[data-round-index="${toIdx}"]`)];
+  if(!fromRound||!toCards.length)return;
+  fromRound.classList.add('is-collapsing');
+  await new Promise(resolve=>setTimeout(resolve,360));
+  toCards.forEach((target,targetIdx)=>{
+    target.classList.add('merge-target');
+  });
+  await new Promise(resolve=>setTimeout(resolve,220));
+  toCards.forEach(target=>target.classList.remove('merge-target'));
+  fromRound.classList.remove('is-collapsing');
+}
+
+async function handleBracketRoundClick(idx){
+  if(idx===elimActiveRound)return;
+  const previous=elimActiveRound;
+  if(idx>previous){
+    for(let step=previous+1;step<=idx;step++){
+      await animateRoundAdvance(step-1,step);
+      elimActiveRound=step;
+      applyBracketFocus();
+      scrollBracketRoundIntoView(step);
+    }
+    return;
+  }
+  elimActiveRound=idx;
+  applyBracketFocus();
+  scrollBracketRoundIntoView(idx);
 }
 
 // ─── RANKING ──────────────────────────────────────────────────────────────────
@@ -987,6 +1111,7 @@ const renders={fixture:renderFixture,elim:renderElim,ranking:renderRanking,admin
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   applyTheme();
+  document.body.dataset.tab='fixture';
   document.getElementById('lang-btn').textContent=lang==='es'?'EN':'ES';
   document.getElementById('auth-lang-btn').textContent=lang==='es'?'EN':'ES';
 
