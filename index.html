@@ -111,8 +111,8 @@ select:focus{outline:none;border-color:var(--green)}
 .loading{text-align:center;padding:40px;color:var(--text3)}
 .elim-head{padding-right:16px}
 #tab-elim.section{padding-right:0}
-.bracket-scroll{overflow-x:auto;overflow-y:hidden;padding:2px 16px 22px 0;scrollbar-color:var(--border2) transparent}
-.bracket-board{display:flex;gap:44px;align-items:flex-start;min-width:max-content}
+.bracket-scroll{overflow:hidden;padding:2px 16px 22px 0;overscroll-behavior-x:none;touch-action:pan-y}
+.bracket-board{display:flex;gap:44px;align-items:flex-start;min-width:max-content;transform:translateX(calc(-1 * var(--bracket-shift, 0px)));transition:transform .42s cubic-bezier(.2,.8,.2,1)}
 .bracket-round{--col-w:280px;--card-h:112px;position:relative;width:var(--col-w);flex:0 0 var(--col-w)}
 .bracket-title{width:100%;height:30px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;font-family:inherit;cursor:pointer;border-radius:8px;transition:color .15s,background .15s}
 .bracket-title:hover{background:var(--bg3);color:var(--text)}
@@ -833,6 +833,10 @@ function renderElim(){
     </div>`;
   }
   el.innerHTML=html;
+  requestAnimationFrame(()=>{
+    updateBracketSlots();
+    updateBracketShift();
+  });
 }
 
 function elimRoundSlot(idx){
@@ -848,6 +852,15 @@ function updateBracketSlots(){
   });
 }
 
+function updateBracketShift(){
+  const scroller=document.querySelector('#tab-elim .bracket-scroll');
+  const board=document.querySelector('#tab-elim .bracket-board');
+  const round=document.querySelector(`#tab-elim .bracket-round[data-round-index="${elimActiveRound}"]`);
+  if(!scroller||!board||!round)return;
+  scroller.scrollLeft=0;
+  board.style.setProperty('--bracket-shift',`${Math.max(0,round.offsetLeft)}px`);
+}
+
 function applyBracketFocus(){
   document.querySelectorAll('#tab-elim .bracket-round').forEach(round=>{
     const idx=parseInt(round.dataset.roundIndex,10);
@@ -856,14 +869,7 @@ function applyBracketFocus(){
     round.classList.toggle('is-after',idx>elimActiveRound);
   });
   updateBracketSlots();
-}
-
-function scrollBracketRoundIntoView(idx,behavior='smooth'){
-  const scroller=document.querySelector('#tab-elim .bracket-scroll');
-  const round=document.querySelector(`#tab-elim .bracket-round[data-round-index="${idx}"]`);
-  if(!scroller||!round)return;
-  const left=Math.max(0,round.offsetLeft-12);
-  scroller.scrollTo({left,behavior});
+  updateBracketShift();
 }
 
 async function animateRoundAdvance(fromIdx,toIdx){
@@ -874,14 +880,13 @@ async function animateRoundAdvance(fromIdx,toIdx){
   elimActiveRound=toIdx;
   requestAnimationFrame(()=>{
     applyBracketFocus();
-    scrollBracketRoundIntoView(toIdx,window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth');
   });
   if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
     fromRound.classList.remove('is-collapsing');
     return;
   }
   await new Promise(resolve=>setTimeout(resolve,120));
-  toCards.forEach((target,targetIdx)=>{
+  toCards.forEach(target=>{
     target.classList.add('merge-target');
   });
   await new Promise(resolve=>setTimeout(resolve,360));
@@ -900,7 +905,6 @@ async function handleBracketRoundClick(idx){
   }
   elimActiveRound=idx;
   applyBracketFocus();
-  scrollBracketRoundIntoView(idx);
 }
 
 // ─── RANKING ──────────────────────────────────────────────────────────────────
