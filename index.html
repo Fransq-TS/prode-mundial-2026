@@ -248,29 +248,29 @@ function toggleTheme(){document.body.classList.toggle('light');const d=!document
 function applyTheme(){const t=localStorage.getItem('theme')||'dark';if(t==='light')document.body.classList.add('light');const b1=document.getElementById('theme-btn'),b2=document.getElementById('auth-theme-btn');if(b1)b1.textContent=t==='dark'?'☀️':'🌙';if(b2)b2.textContent=t==='dark'?'☀️':'🌙';}
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
-const GROUPS={A:['México','Sudáfrica','Corea del Sur','Rep. Checa'],B:['Canadá','Bosnia','Qatar','Suiza'],C:['Brasil','Marruecos','Haití','Escocia'],D:['EE.UU.','Paraguay','Australia','Turquía'],E:['Alemania','Curazao','Costa de Marfil','Ecuador'],F:['Países Bajos','Japón','Suecia','Túnez'],G:['Bélgica','Egipto','Irán','Nueva Zelanda'],H:['España','Cabo Verde','Arabia Saudita','Uruguay'],I:['Francia','Senegal','Irak','Noruega'],J:['Argentina','Argelia','Austria','Jordania'],K:['Portugal','RD Congo','Uzbekistán','Colombia'],L:['Inglaterra','Croacia','Ghana','Panamá']};
-const FLAGS={México:'🇲🇽',Sudáfrica:'🇿🇦','Corea del Sur':'🇰🇷','Rep. Checa':'🇨🇿',Canadá:'🇨🇦',Bosnia:'🇧🇦',Qatar:'🇶🇦',Suiza:'🇨🇭',Brasil:'🇧🇷',Marruecos:'🇲🇦',Haití:'🇭🇹',Escocia:'🏴󠁧󠁢󠁳󠁣󠁴󠁿','EE.UU.':'🇺🇸',Paraguay:'🇵🇾',Australia:'🇦🇺',Turquía:'🇹🇷',Alemania:'🇩🇪',Curazao:'🇨🇼','Costa de Marfil':'🇨🇮',Ecuador:'🇪🇨','Países Bajos':'🇳🇱',Japón:'🇯🇵',Suecia:'🇸🇪',Túnez:'🇹🇳',Bélgica:'🇧🇪',Egipto:'🇪🇬',Irán:'🇮🇷','Nueva Zelanda':'🇳🇿',España:'🇪🇸','Cabo Verde':'🇨🇻','Arabia Saudita':'🇸🇦',Uruguay:'🇺🇾',Francia:'🇫🇷',Senegal:'🇸🇳',Irak:'🇮🇶',Noruega:'🇳🇴',Argentina:'🇦🇷',Argelia:'🇩🇿',Austria:'🇦🇹',Jordania:'🇯🇴',Portugal:'🇵🇹','RD Congo':'🇨🇩',Uzbekistán:'🇺🇿',Colombia:'🇨🇴',Inglaterra:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',Croacia:'🇭🇷',Ghana:'🇬🇭',Panamá:'🇵🇦'};
+const GROUPS={A:['México','Sudáfrica','Corea del Sur','Rep. Checa'],B:['Canadá','Bosnia y Herzegovina','Qatar','Suiza'],C:['Brasil','Marruecos','Haití','Escocia'],D:['EE.UU.','Paraguay','Australia','Turquía'],E:['Alemania','Curazao','Costa de Marfil','Ecuador'],F:['Países Bajos','Japón','Suecia','Túnez'],G:['Bélgica','Egipto','Irán','Nueva Zelanda'],H:['España','Cabo Verde','Arabia Saudita','Uruguay'],I:['Francia','Senegal','Irak','Noruega'],J:['Argentina','Argelia','Austria','Jordania'],K:['Portugal','RD Congo','Uzbekistán','Colombia'],L:['Inglaterra','Croacia','Ghana','Panamá']};
+const FLAGS={México:'🇲🇽',Sudáfrica:'🇿🇦','Corea del Sur':'🇰🇷','Rep. Checa':'🇨🇿',Canadá:'🇨🇦','Bosnia y Herzegovina':'🇧🇦',Qatar:'🇶🇦',Suiza:'🇨🇭',Brasil:'🇧🇷',Marruecos:'🇲🇦',Haití:'🇭🇹',Escocia:'🏴󠁧󠁢󠁳󠁣󠁴󠁿','EE.UU.':'🇺🇸',Paraguay:'🇵🇾',Australia:'🇦🇺',Turquía:'🇹🇷',Alemania:'🇩🇪',Curazao:'🇨🇼','Costa de Marfil':'🇨🇮',Ecuador:'🇪🇨','Países Bajos':'🇳🇱',Japón:'🇯🇵',Suecia:'🇸🇪',Túnez:'🇹🇳',Bélgica:'🇧🇪',Egipto:'🇪🇬',Irán:'🇮🇷','Nueva Zelanda':'🇳🇿',España:'🇪🇸','Cabo Verde':'🇨🇻','Arabia Saudita':'🇸🇦',Uruguay:'🇺🇾',Francia:'🇫🇷',Senegal:'🇸🇳',Irak:'🇮🇶',Noruega:'🇳🇴',Argentina:'🇦🇷',Argelia:'🇩🇿',Austria:'🇦🇹',Jordania:'🇯🇴',Portugal:'🇵🇹','RD Congo':'🇨🇩',Uzbekistán:'🇺🇿',Colombia:'🇨🇴',Inglaterra:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',Croacia:'🇭🇷',Ghana:'🇬🇭',Panamá:'🇵🇦'};
 const ELIM_ROUNDS=[{id:'r32',label:'16avos',matches:16,pe:4,pr:2},{id:'r16',label:'Octavos',matches:8,pe:5,pr:2},{id:'qf',label:'Cuartos',matches:4,pe:6,pr:3},{id:'sf',label:'Semis',matches:2,pe:7,pr:3},{id:'tp',label:'3er puesto',matches:1,pe:5,pr:2},{id:'final',label:'Final',matches:1,pe:10,pr:5}];
 const SEED=(rank,group)=>({rank,group});
 const THIRD=(groups)=>({rank:3,groups});
 const TEAM=(name,seed)=>({name,seed});
 const R32_MATCHUPS=[
-  {no:74,date:'29/06',time:'16:30',home:TEAM('Alemania',SEED(1,'E')),away:THIRD(['A','B','C','D','F'])},
-  {no:77,date:'30/06',time:'17:00',home:TEAM('Francia',SEED(1,'I')),away:THIRD(['C','D','F','G','H'])},
-  {no:73,date:'28/06',time:'15:00',home:TEAM('Sudáfrica',SEED(2,'A')),away:TEAM('Canadá',SEED(2,'B'))},
-  {no:75,date:'29/06',time:'21:00',home:TEAM('Países Bajos',SEED(1,'F')),away:TEAM('Marruecos',SEED(2,'C'))},
-  {no:76,date:'29/06',time:'13:00',home:TEAM('Brasil',SEED(1,'C')),away:TEAM('Japón',SEED(2,'F'))},
-  {no:78,date:'30/06',time:'13:00',home:TEAM('Costa de Marfil',SEED(2,'E')),away:TEAM('Noruega',SEED(2,'I'))},
-  {no:79,date:'30/06',time:'21:00',home:TEAM('México',SEED(1,'A')),away:THIRD(['C','E','F','H','I'])},
-  {no:80,date:'01/07',time:'12:00',home:SEED(1,'L'),away:THIRD(['E','H','I','J','K'])},
-  {no:83,date:'02/07',time:'19:00',home:SEED(2,'K'),away:SEED(2,'L')},
-  {no:84,date:'02/07',time:'15:00',home:TEAM('España',SEED(1,'H')),away:SEED(2,'J')},
-  {no:81,date:'01/07',time:'20:00',home:TEAM('EE.UU.',SEED(1,'D')),away:TEAM('Bosnia',THIRD(['B']))},
-  {no:82,date:'01/07',time:'16:00',home:SEED(1,'G'),away:THIRD(['A','E','H','I','J'])},
-  {no:86,date:'03/07',time:'18:00',home:TEAM('Argentina',SEED(1,'J')),away:TEAM('Cabo Verde',SEED(2,'H'))},
-  {no:88,date:'03/07',time:'14:00',home:TEAM('Australia',SEED(2,'D')),away:SEED(2,'G')},
-  {no:85,date:'02/07',time:'23:00',home:TEAM('Suiza',SEED(1,'B')),away:THIRD(['E','F','G','I','J'])},
-  {no:87,date:'03/07',time:'21:30',home:SEED(1,'K'),away:THIRD(['D','E','I','J','L'])},
+  {no:73,date:'28/06',time:'14:00',home:TEAM('Sudáfrica',SEED(2,'A')),away:TEAM('Canadá',SEED(2,'B'))},
+  {no:75,date:'29/06',time:'20:00',home:TEAM('Países Bajos',SEED(1,'F')),away:TEAM('Marruecos',SEED(2,'C'))},
+  {no:74,date:'29/06',time:'15:30',home:TEAM('Alemania',SEED(1,'E')),away:TEAM('Paraguay',THIRD(['D']))},
+  {no:77,date:'30/06',time:'16:00',home:TEAM('Francia',SEED(1,'I')),away:TEAM('Suecia',THIRD(['F']))},
+  {no:82,date:'01/07',time:'15:00',home:SEED(1,'G'),away:THIRD(['A','E','H','I','J'])},
+  {no:81,date:'01/07',time:'19:00',home:TEAM('EE.UU.',SEED(1,'D')),away:TEAM('Bosnia y Herzegovina',THIRD(['B']))},
+  {no:84,date:'02/07',time:'14:00',home:TEAM('España',SEED(1,'H')),away:SEED(2,'J')},
+  {no:83,date:'02/07',time:'18:00',home:SEED(2,'K'),away:SEED(2,'L')},
+  {no:76,date:'29/06',time:'12:00',home:TEAM('Brasil',SEED(1,'C')),away:TEAM('Japón',SEED(2,'F'))},
+  {no:78,date:'30/06',time:'12:00',home:TEAM('Costa de Marfil',SEED(2,'E')),away:TEAM('Noruega',SEED(2,'I'))},
+  {no:79,date:'30/06',time:'20:00',home:TEAM('México',SEED(1,'A')),away:THIRD(['C','E','F','H','I'])},
+  {no:80,date:'01/07',time:'11:00',home:SEED(1,'L'),away:THIRD(['E','H','I','J','K'])},
+  {no:85,date:'02/07',time:'22:00',home:TEAM('Suiza',SEED(1,'B')),away:THIRD(['E','F','G','I','J'])},
+  {no:87,date:'03/07',time:'20:30',home:SEED(1,'K'),away:THIRD(['D','E','I','J','L'])},
+  {no:88,date:'03/07',time:'13:00',home:TEAM('Australia',SEED(2,'D')),away:SEED(2,'G')},
+  {no:86,date:'03/07',time:'17:00',home:TEAM('Argentina',SEED(1,'J')),away:TEAM('Cabo Verde',SEED(2,'H'))},
 ];
 const ELIM_MATCH_NUMBERS={r32:R32_MATCHUPS.map(m=>m.no),r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],tp:[103],final:[104]};
 const ROUND_LABELS={
@@ -284,12 +284,12 @@ const MATCHES=[
   {id:'A13',group:'A',home:'Rep. Checa',away:'Sudáfrica',date:'18/06',time:'12:00',iso:'2026-06-18T12:00'},
   {id:'A03',group:'A',home:'México',away:'Rep. Checa',date:'24/06',time:'21:00',iso:'2026-06-24T21:00'},
   {id:'A12',group:'A',home:'Sudáfrica',away:'Corea del Sur',date:'24/06',time:'21:00',iso:'2026-06-24T21:00'},
-  {id:'B01',group:'B',home:'Canadá',away:'Bosnia',date:'12/06',time:'15:00',iso:'2026-06-12T15:00'},
+  {id:'B01',group:'B',home:'Canadá',away:'Bosnia y Herzegovina',date:'12/06',time:'15:00',iso:'2026-06-12T15:00'},
   {id:'B23',group:'B',home:'Qatar',away:'Suiza',date:'13/06',time:'15:00',iso:'2026-06-13T15:00'},
   {id:'B02',group:'B',home:'Canadá',away:'Qatar',date:'18/06',time:'18:00',iso:'2026-06-18T18:00'},
-  {id:'B13',group:'B',home:'Suiza',away:'Bosnia',date:'18/06',time:'15:00',iso:'2026-06-18T15:00'},
+  {id:'B13',group:'B',home:'Suiza',away:'Bosnia y Herzegovina',date:'18/06',time:'15:00',iso:'2026-06-18T15:00'},
   {id:'B03',group:'B',home:'Canadá',away:'Suiza',date:'24/06',time:'15:00',iso:'2026-06-24T15:00'},
-  {id:'B12',group:'B',home:'Bosnia',away:'Qatar',date:'24/06',time:'15:00',iso:'2026-06-24T15:00'},
+  {id:'B12',group:'B',home:'Bosnia y Herzegovina',away:'Qatar',date:'24/06',time:'15:00',iso:'2026-06-24T15:00'},
   {id:'C01',group:'C',home:'Brasil',away:'Marruecos',date:'13/06',time:'18:00',iso:'2026-06-13T18:00'},
   {id:'C23',group:'C',home:'Haití',away:'Escocia',date:'13/06',time:'21:00',iso:'2026-06-13T21:00'},
   {id:'C02',group:'C',home:'Brasil',away:'Haití',date:'19/06',time:'20:30',iso:'2026-06-19T20:30'},
