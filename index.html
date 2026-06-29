@@ -245,8 +245,8 @@ const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 const T={
-  es:{title:'Prode Mundial 2026',sub:'Ingresá para cargar tus pronósticos',login:'Ingresar',register:'Registrarse',your_name:'Tu nombre',email:'Email',password:'Contraseña',enter:'Ingresar',create:'Crear cuenta',logout:'Salir',change:'Cambiar',groups:'Grupos',elim:'Eliminatoria',ranking:'Ranking',admin:'Admin',exact:'marcador exacto',result_pt:'resultado correcto',by_group:'Por grupo',by_date:'Por fecha',all_groups:'Todos los grupos',all_dates:'Todas las fechas',today:'Hoy',previous_matches:'Partidos anteriores',group_lbl:'Grupo',played:'grupos jugados',players_lbl:'jugadores',elim_played:'eliminatorias',exact_lbl:'exactos',result_lbl:'resultado',miss_lbl:'fallos',pts:'pts',you:'vos',saved:'Guardado',already_started:'Este partido ya empezó 🔒',admin_only:'Solo el admin puede cargar resultados.',res_groups:'Resultados grupos',res_elim:'Resultados eliminat.',teams_elim:'Equipos eliminat.',players_tab:'Jugadores',admin_mode:'Admin · Código:',to_define:'Por definir',match:'Partido',elim_note:'Los equipos se actualizan cuando avanza el torneo.',footer:'¿Problemas? Contactá al admin.',loading:'Cargando...'},
-  en:{title:'World Cup 2026 Predictor',sub:'Sign in to submit your predictions',login:'Sign in',register:'Sign up',your_name:'Your name',email:'Email',password:'Password',enter:'Sign in',create:'Create account',logout:'Sign out',change:'Switch',groups:'Groups',elim:'Knockout',ranking:'Ranking',admin:'Admin',exact:'exact score',result_pt:'correct result',by_group:'By group',by_date:'By date',all_groups:'All groups',all_dates:'All dates',today:'Today',previous_matches:'Previous matches',group_lbl:'Group',played:'group matches played',players_lbl:'players',elim_played:'knockout matches',exact_lbl:'exact',result_lbl:'result',miss_lbl:'misses',pts:'pts',you:'you',saved:'Saved',already_started:'This match already started 🔒',admin_only:'Only the admin can load results.',res_groups:'Group results',res_elim:'Knockout results',teams_elim:'Knockout teams',players_tab:'Players',admin_mode:'Admin · Code:',to_define:'TBD',match:'Match',elim_note:'Teams update as the tournament progresses.',footer:'Problems? Contact your office admin.',loading:'Loading...'}
+  es:{title:'Prode Mundial 2026',sub:'Ingresá para cargar tus pronósticos',login:'Ingresar',register:'Registrarse',your_name:'Tu nombre',email:'Email',password:'Contraseña',enter:'Ingresar',create:'Crear cuenta',logout:'Salir',change:'Cambiar',groups:'Grupos',elim:'Eliminatoria',ranking:'Ranking',admin:'Admin',exact:'marcador exacto',result_pt:'resultado correcto',by_group:'Por grupo',by_date:'Por fecha',all_groups:'Todos los grupos',all_dates:'Todas las fechas',today:'Hoy',previous_matches:'Partidos anteriores',group_lbl:'Grupo',played:'grupos jugados',players_lbl:'jugadores',elim_played:'eliminatorias',exact_lbl:'exactos',result_lbl:'resultado',miss_lbl:'fallos',pts:'pts',you:'vos',saved:'Guardado',already_started:'Este partido ya empezó 🔒',admin_only:'Solo el admin puede cargar resultados.',res_groups:'Resultados grupos',res_elim:'Resultados eliminat.',teams_elim:'Equipos eliminat.',players_tab:'Jugadores',admin_mode:'Admin · Código:',to_define:'Por definir',match:'Partido',elim_note:'Los equipos se actualizan cuando avanza el torneo. Horarios en Chile.',footer:'¿Problemas? Contactá al admin.',loading:'Cargando...'},
+  en:{title:'World Cup 2026 Predictor',sub:'Sign in to submit your predictions',login:'Sign in',register:'Sign up',your_name:'Your name',email:'Email',password:'Password',enter:'Sign in',create:'Create account',logout:'Sign out',change:'Switch',groups:'Groups',elim:'Knockout',ranking:'Ranking',admin:'Admin',exact:'exact score',result_pt:'correct result',by_group:'By group',by_date:'By date',all_groups:'All groups',all_dates:'All dates',today:'Today',previous_matches:'Previous matches',group_lbl:'Group',played:'group matches played',players_lbl:'players',elim_played:'knockout matches',exact_lbl:'exact',result_lbl:'result',miss_lbl:'misses',pts:'pts',you:'you',saved:'Saved',already_started:'This match already started 🔒',admin_only:'Only the admin can load results.',res_groups:'Group results',res_elim:'Knockout results',teams_elim:'Knockout teams',players_tab:'Players',admin_mode:'Admin · Code:',to_define:'TBD',match:'Match',elim_note:'Teams update as the tournament progresses. Times are shown in Chile time.',footer:'Problems? Contact your office admin.',loading:'Loading...'}
 };
 let lang=localStorage.getItem('lang')||'es';
 function t(k){return T[lang]?.[k]||T.es[k]||k;}
@@ -262,23 +262,49 @@ const SEED=(rank,group)=>({rank,group});
 const THIRD=(groups)=>({rank:3,groups});
 const TEAM=(name,seed)=>({name,seed});
 const R32_MATCHUPS=[
-  {no:73,date:'28/06',time:'14:00',home:TEAM('Sudáfrica',SEED(2,'A')),away:TEAM('Canadá',SEED(2,'B'))},
-  {no:75,date:'29/06',time:'20:00',home:TEAM('Países Bajos',SEED(1,'F')),away:TEAM('Marruecos',SEED(2,'C'))},
-  {no:74,date:'29/06',time:'15:30',home:TEAM('Alemania',SEED(1,'E')),away:TEAM('Paraguay',THIRD(['D']))},
-  {no:77,date:'30/06',time:'16:00',home:TEAM('Francia',SEED(1,'I')),away:TEAM('Suecia',THIRD(['F']))},
-  {no:82,date:'01/07',time:'15:00',home:TEAM('Bélgica',SEED(1,'G')),away:THIRD(['A','E','H','I','J'])},
-  {no:81,date:'01/07',time:'19:00',home:TEAM('EE.UU.',SEED(1,'D')),away:TEAM('Bosnia y Herzegovina',THIRD(['B']))},
-  {no:84,date:'02/07',time:'14:00',home:TEAM('España',SEED(1,'H')),away:SEED(2,'J')},
-  {no:83,date:'02/07',time:'18:00',home:SEED(2,'K'),away:SEED(2,'L')},
-  {no:76,date:'29/06',time:'12:00',home:TEAM('Brasil',SEED(1,'C')),away:TEAM('Japón',SEED(2,'F'))},
-  {no:78,date:'30/06',time:'12:00',home:TEAM('Costa de Marfil',SEED(2,'E')),away:TEAM('Noruega',SEED(2,'I'))},
-  {no:79,date:'30/06',time:'20:00',home:TEAM('México',SEED(1,'A')),away:THIRD(['C','E','F','H','I'])},
-  {no:80,date:'01/07',time:'11:00',home:SEED(1,'L'),away:THIRD(['E','H','I','J','K'])},
-  {no:85,date:'02/07',time:'22:00',home:TEAM('Suiza',SEED(1,'B')),away:THIRD(['E','F','G','I','J'])},
-  {no:87,date:'03/07',time:'20:30',home:SEED(1,'K'),away:THIRD(['D','E','I','J','L'])},
-  {no:88,date:'03/07',time:'13:00',home:TEAM('Australia',SEED(2,'D')),away:TEAM('Egipto',SEED(2,'G'))},
-  {no:86,date:'03/07',time:'17:00',home:TEAM('Argentina',SEED(1,'J')),away:TEAM('Cabo Verde',SEED(2,'H'))},
+  {no:73,date:'28/06',time:'15:00',home:TEAM('Sudáfrica',SEED(2,'A')),away:TEAM('Canadá',SEED(2,'B'))},
+  {no:75,date:'29/06',time:'21:00',home:TEAM('Países Bajos',SEED(1,'F')),away:TEAM('Marruecos',SEED(2,'C'))},
+  {no:74,date:'29/06',time:'16:30',home:TEAM('Alemania',SEED(1,'E')),away:TEAM('Paraguay',THIRD(['D']))},
+  {no:77,date:'30/06',time:'17:00',home:TEAM('Francia',SEED(1,'I')),away:TEAM('Suecia',THIRD(['F']))},
+  {no:82,date:'01/07',time:'16:00',home:TEAM('Bélgica',SEED(1,'G')),away:TEAM('Senegal',THIRD(['I']))},
+  {no:81,date:'01/07',time:'20:00',home:TEAM('EE.UU.',SEED(1,'D')),away:TEAM('Bosnia y Herzegovina',THIRD(['B']))},
+  {no:84,date:'02/07',time:'15:00',home:TEAM('España',SEED(1,'H')),away:TEAM('Austria',SEED(2,'J'))},
+  {no:83,date:'02/07',time:'19:00',home:TEAM('Portugal',SEED(2,'K')),away:TEAM('Croacia',SEED(2,'L'))},
+  {no:76,date:'29/06',time:'13:00',home:TEAM('Brasil',SEED(1,'C')),away:TEAM('Japón',SEED(2,'F'))},
+  {no:78,date:'30/06',time:'13:00',home:TEAM('Costa de Marfil',SEED(2,'E')),away:TEAM('Noruega',SEED(2,'I'))},
+  {no:79,date:'30/06',time:'21:00',home:TEAM('México',SEED(1,'A')),away:TEAM('Ecuador',THIRD(['E']))},
+  {no:80,date:'01/07',time:'12:00',home:TEAM('Inglaterra',SEED(1,'L')),away:TEAM('RD Congo',THIRD(['K']))},
+  {no:85,date:'02/07',time:'23:00',home:TEAM('Suiza',SEED(1,'B')),away:TEAM('Argelia',THIRD(['J']))},
+  {no:87,date:'03/07',time:'21:30',home:TEAM('Colombia',SEED(1,'K')),away:TEAM('Ghana',THIRD(['L']))},
+  {no:88,date:'03/07',time:'14:00',home:TEAM('Australia',SEED(2,'D')),away:TEAM('Egipto',SEED(2,'G'))},
+  {no:86,date:'03/07',time:'18:00',home:TEAM('Argentina',SEED(1,'J')),away:TEAM('Cabo Verde',SEED(2,'H'))},
 ];
+const ELIM_SCHEDULES={
+  r16:[
+    {date:'04/07',time:'13:00'},
+    {date:'04/07',time:'17:00'},
+    {date:'06/07',time:'20:00'},
+    {date:'06/07',time:'15:00'},
+    {date:'05/07',time:'16:00'},
+    {date:'05/07',time:'20:00'},
+    {date:'07/07',time:'16:00'},
+    {date:'07/07',time:'12:00'},
+  ],
+  qf:[
+    {date:'09/07',time:'16:00'},
+    {date:'10/07',time:'15:00'},
+    {date:'11/07',time:'17:00'},
+    {date:'11/07',time:'21:00'},
+  ],
+  sf:[
+    {date:'14/07',time:'15:00'},
+    {date:'15/07',time:'15:00'},
+  ],
+  final:[
+    {date:'19/07',time:'15:00'},
+  ],
+};
+const DEFAULT_ELIM_TEAMS={r16_0:{home:'Canadá',away:''}};
 const ELIM_MATCH_NUMBERS={r32:R32_MATCHUPS.map(m=>m.no),r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],tp:[103],final:[104]};
 const ROUND_LABELS={
   es:{r32:'Eliminatoria de 32',r16:'Octavos de final',qf:'Cuartos de final',sf:'Semifinales',tp:'3er puesto',final:'Final'},
@@ -387,13 +413,12 @@ function isLocked(match){
 }
 
 function elimKickoff(round,i){
-  if(round.id!=='r32')return null;
-  const matchup=R32_MATCHUPS[i];
-  if(!matchup?.date||!matchup?.time)return null;
-  const[day,month]=matchup.date.split('/').map(Number);
+  const schedule=elimSchedule(round,i);
+  if(!schedule?.date||!schedule?.time)return null;
+  const[day,month]=schedule.date.split('/').map(Number);
   const dd=String(day).padStart(2,'0');
   const mm=String(month).padStart(2,'0');
-  return new Date(`2026-${mm}-${dd}T${matchup.time}:00-04:00`);
+  return new Date(`2026-${mm}-${dd}T${schedule.time}:00-04:00`);
 }
 
 function isElimLocked(round,i){
@@ -504,6 +529,10 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function roundLabel(round){return ROUND_LABELS[lang]?.[round.id]||round.label;}
 function elimExactText(round){return lang==='es'?`+${round.pe} exacto ${roundLabel(round)}`:`+${round.pe} exact ${roundLabel(round)}`;}
 function elimMatchNumber(round,i){return ELIM_MATCH_NUMBERS[round.id]?.[i]||i+1;}
+function elimSchedule(round,i){
+  if(round.id==='r32')return R32_MATCHUPS[i]||null;
+  return ELIM_SCHEDULES[round.id]?.[i]||null;
+}
 function seedText(seed){
   if(seed.name)return seed.name;
   if(seed.seed)return seedText(seed.seed);
@@ -519,14 +548,19 @@ function seedDetail(seed){
 }
 function elimMatchMeta(round,i){
   const no=elimMatchNumber(round,i);
-  const matchup=round.id==='r32'?R32_MATCHUPS[i]:null;
-  if(matchup?.date&&matchup?.time)return `${matchup.date} ${matchup.time} · ${t('match')} ${no}`;
+  const schedule=elimSchedule(round,i);
+  if(schedule?.date&&schedule?.time)return `${schedule.date} ${schedule.time} · ${t('match')} ${no}`;
   return `${roundLabel(round)} · ${t('match')} ${no}`;
 }
 function elimMatchDate(round,i){
-  return round.id==='r32'?R32_MATCHUPS[i]?.date||'':'';
+  return elimSchedule(round,i)?.date||'';
 }
 function fallbackElimTeams(round,i){
+  const defaultTeams=DEFAULT_ELIM_TEAMS[`${round.id}_${i}`];
+  if(defaultTeams)return {
+    home:defaultTeams.home||t('to_define'),
+    away:defaultTeams.away||t('to_define')
+  };
   if(round.id!=='r32')return {home:t('to_define'),away:t('to_define')};
   const matchup=R32_MATCHUPS[i];
   if(!matchup)return {home:t('to_define'),away:t('to_define')};
@@ -674,8 +708,11 @@ function buildResultsMaps(groupResults,knockoutResults,knockoutTeams){
   groupResults.forEach(r=>{results[r.match_id]={h:r.home_score,a:r.away_score};});
   elimResults={};
   knockoutResults.forEach(r=>{elimResults[r.match_id]={h:r.home_score,a:r.away_score};});
-  elimTeams={};
-  knockoutTeams.forEach(r=>{elimTeams[r.match_id]={home:r.home_team,away:r.away_team};});
+  elimTeams={...DEFAULT_ELIM_TEAMS};
+  knockoutTeams.forEach(r=>{
+    const fallback=elimTeams[r.match_id]||{};
+    elimTeams[r.match_id]={home:r.home_team||fallback.home||'',away:r.away_team||fallback.away||''};
+  });
 }
 
 async function loadUserData(){
