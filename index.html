@@ -386,6 +386,32 @@ function isLocked(match){
   return new Date()>=(kickoff.getTime()-60*1000);
 }
 
+function elimKickoff(round,i){
+  if(round.id!=='r32')return null;
+  const matchup=R32_MATCHUPS[i];
+  if(!matchup?.date||!matchup?.time)return null;
+  const[day,month]=matchup.date.split('/').map(Number);
+  const dd=String(day).padStart(2,'0');
+  const mm=String(month).padStart(2,'0');
+  return new Date(`2026-${mm}-${dd}T${matchup.time}:00-04:00`);
+}
+
+function isElimLocked(round,i){
+  const kickoff=elimKickoff(round,i);
+  if(!kickoff)return false;
+  return new Date()>=(kickoff.getTime()-60*1000);
+}
+
+function elimMatchFromId(mid){
+  const splitAt=mid.lastIndexOf('_');
+  if(splitAt<0)return null;
+  const roundId=mid.slice(0,splitAt);
+  const i=parseInt(mid.slice(splitAt+1),10);
+  const round=ELIM_ROUNDS.find(r=>r.id===roundId);
+  if(!round||isNaN(i))return null;
+  return {round,i};
+}
+
 function lockPredictionInput(inp){
   inp.disabled=true;
   inp.style.opacity='0.4';
@@ -400,15 +426,44 @@ function guardPredictionFocus(inp){
   refreshLocks();
 }
 
+function guardElimPredictionFocus(inp){
+  const match=elimMatchFromId(inp.dataset.mid);
+  if(!match||!isElimLocked(match.round,match.i))return;
+  lockPredictionInput(inp);
+  showToast(t('already_started'),'err');
+  refreshLocks();
+}
+
 function refreshLocks(){
   const activeTab=document.querySelector('.bnav-btn.active');
-  if(!activeTab||activeTab.dataset.tab!=='fixture')return;
-  document.querySelectorAll('.card').forEach(card=>{
+  if(!activeTab)return;
+  if(activeTab.dataset.tab==='fixture'){
+    document.querySelectorAll('.card').forEach(card=>{
+      const inp=card.querySelector('input[data-mid]');
+      if(!inp)return;
+      const match=MATCHES.find(m=>m.id===inp.dataset.mid);
+      if(!match)return;
+      const locked=isLocked(match);
+      card.querySelectorAll('input').forEach(i=>{
+        if(locked){
+          lockPredictionInput(i);
+        }else{
+          i.disabled=false;
+          i.style.opacity='1';
+        }
+      });
+      const meta=card.querySelector('.match-meta');
+      if(meta)meta.textContent=`${match.date} ${match.time}hs · ${t('group_lbl')} ${match.group}${locked?' 🔒':''}`;
+    });
+    return;
+  }
+  if(activeTab.dataset.tab!=='elim')return;
+  document.querySelectorAll('#tab-elim .bracket-card').forEach(card=>{
     const inp=card.querySelector('input[data-mid]');
     if(!inp)return;
-    const match=MATCHES.find(m=>m.id===inp.dataset.mid);
+    const match=elimMatchFromId(inp.dataset.mid);
     if(!match)return;
-    const locked=isLocked(match);
+    const locked=isElimLocked(match.round,match.i);
     card.querySelectorAll('input').forEach(i=>{
       if(locked){
         lockPredictionInput(i);
@@ -417,8 +472,8 @@ function refreshLocks(){
         i.style.opacity='1';
       }
     });
-    const meta=card.querySelector('.match-meta');
-    if(meta)meta.textContent=`${match.date} ${match.time}hs · ${t('group_lbl')} ${match.group}${locked?' 🔒':''}`;
+    const meta=card.querySelector('.bracket-meta');
+    if(meta&&locked&&!meta.textContent.includes('🔒'))meta.insertAdjacentText('afterbegin','🔒 ');
   });
 }
 setInterval(refreshLocks,15000);
@@ -725,6 +780,12 @@ async function saveElimPred(inp){
   if(val===''||val===null)return;
   const numVal=parseInt(val);
   if(isNaN(numVal)||numVal<0)return;
+  const elimMatch=elimMatchFromId(mid);
+  if(elimMatch&&isElimLocked(elimMatch.round,elimMatch.i)){
+    lockPredictionInput(inp);
+    showToast(t('already_started'),'err');
+    refreshLocks();return;
+  }
   if(!allElimPreds[currentUser.id])allElimPreds[currentUser.id]={};
   if(!allElimPreds[currentUser.id][mid])allElimPreds[currentUser.id][mid]={h:null,a:null};
   allElimPreds[currentUser.id][mid][side]=numVal;
@@ -879,18 +940,19 @@ function renderElim(){
     const badge=elimBadge(round,pred,real);
     const compact=`${home} / ${away}`;
     const todayClass=elimMatchDate(round,i)===todayDate?'is-today':'';
+    const locked=isElimLocked(round,i);
     return`<div class="card bracket-card ${extraClass} ${todayClass}" style="--idx:${i};--pair:${Math.floor(i/2)};--side:${i%2}" data-round-index="${roundIdx}" data-match-index="${i}">
       <div class="bracket-summary">${esc(compact)}</div>
-      <div class="bracket-meta">${esc(elimMatchMeta(round,i))}${badge}</div>
+      <div class="bracket-meta">${locked?'🔒 ':''}${esc(elimMatchMeta(round,i))}${badge}</div>
       <label class="bracket-team">
         <span class="bracket-team-name">${esc(home)}${seeds.home&&home!==seeds.home?`<span class="bracket-team-seed">${esc(seeds.home)}</span>`:''}</span>
         <input type="number" min="0" max="20" value="${pred.h!==null?esc(pred.h):''}" placeholder="?"
-          data-mid="${mid}" data-side="h" onblur="saveElimPred(this)">
+          data-mid="${mid}" data-side="h" onfocus="guardElimPredictionFocus(this)" onblur="saveElimPred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
       </label>
       <label class="bracket-team">
         <span class="bracket-team-name">${esc(away)}${seeds.away&&away!==seeds.away?`<span class="bracket-team-seed">${esc(seeds.away)}</span>`:''}</span>
         <input type="number" min="0" max="20" value="${pred.a!==null?esc(pred.a):''}" placeholder="?"
-          data-mid="${mid}" data-side="a" onblur="saveElimPred(this)">
+          data-mid="${mid}" data-side="a" onfocus="guardElimPredictionFocus(this)" onblur="saveElimPred(this)" ${locked?'disabled style="opacity:.4" tabindex="-1"':''}>
       </label>
     </div>`;
   };
