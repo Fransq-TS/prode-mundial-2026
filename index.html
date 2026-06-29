@@ -214,16 +214,16 @@ select:focus{outline:none;border-color:var(--green)}
     </div>
   </div>
   <div class="app">
-    <div id="tab-fixture" class="section active"></div>
-    <div id="tab-elim" class="section"></div>
+    <div id="tab-fixture" class="section"></div>
+    <div id="tab-elim" class="section active"></div>
     <div id="tab-ranking" class="section"></div>
     <div id="tab-admin" class="section"></div>
   </div>
   <nav class="bottomnav">
-    <button class="bnav-btn active" onclick="showTab('fixture',this)" data-tab="fixture">
+    <button class="bnav-btn" onclick="showTab('fixture',this)" data-tab="fixture">
       <span class="bnav-icon">🗓️</span><span class="nav-groups">Grupos</span>
     </button>
-    <button class="bnav-btn" onclick="showTab('elim',this)" data-tab="elim">
+    <button class="bnav-btn active" onclick="showTab('elim',this)" data-tab="elim">
       <span class="bnav-icon">🏆</span><span class="nav-elim">Eliminatoria</span>
     </button>
     <button class="bnav-btn" onclick="showTab('ranking',this)" data-tab="ranking">
@@ -1376,7 +1376,7 @@ const renders={fixture:renderFixture,elim:renderElim,ranking:renderRanking,admin
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   applyTheme();
-  document.body.dataset.tab='fixture';
+  document.body.dataset.tab='elim';
   document.getElementById('lang-btn').textContent=lang==='es'?'EN':'ES';
   document.getElementById('auth-lang-btn').textContent=lang==='es'?'EN':'ES';
 
@@ -1403,7 +1403,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
       document.querySelector('.nav-elim').textContent=t('elim');
       document.getElementById('logout-btn').textContent=t('logout');
       await loadUserData();
-      renderFixture();
+      renderElim();
     }else{
       document.getElementById('main-app').style.display='none';
       document.getElementById('auth-screen').style.display='block';
