@@ -605,9 +605,9 @@ function calcPoints(uid){
     for(let i=0;i<round.matches;i++){
       const mid=`${round.id}_${i}`;
       const pred=elimPreds[mid];const real=elimResults[mid];
-      if(!pred||!real||pred.h===null||pred.a===null||real.h===null||real.a===null)return;
+      if(!pred||!real||pred.h===null||pred.a===null||real.h===null||real.a===null)continue;
       const pr=getResult(pred.h,pred.a),rr=getResult(real.h,real.a);
-      if(!pr||!rr)return;
+      if(!pr||!rr)continue;
       if(pred.h==real.h&&pred.a==real.a){pts+=round.pe;exact++;}
       else if(pr===rr){pts+=round.pr;res++;}
       else miss++;
@@ -739,13 +739,17 @@ async function loadUserData(){
 async function loadRankingData(force=false){
   if(rankingDataLoaded&&!force)return true;
   try{
-    const[profiles,predictions,elimPredictions]=await Promise.all([
+    const[profiles,predictions,elimPredictions,groupResults,knockoutResults,knockoutTeams]=await Promise.all([
       fetchAllRows('profiles'),
       fetchAllRows('predictions'),
       fetchAllRows('elim_predictions'),
+      fetchAllRows('results'),
+      fetchAllRows('elim_results'),
+      fetchAllRows('elim_teams'),
     ]);
     allProfiles=profiles;
     buildPredictionMaps(predictions,elimPredictions);
+    buildResultsMaps(groupResults,knockoutResults,knockoutTeams);
     rankingDataLoaded=true;
     return true;
   }catch(error){
@@ -861,14 +865,14 @@ async function showTab(tabName,btn){
   if(btn)btn.classList.add('active');
   if(tabName==='ranking'){
     tabEl.innerHTML=`<div class="empty">${t('loading')}</div>`;
-    await loadRankingData();
+    await loadRankingData(true);
   }
   renders[tabName]&&renders[tabName]();
 }
 async function rerender(){
   const activeTab=document.querySelector('.bnav-btn.active');
   const tabId=activeTab?activeTab.dataset.tab:'fixture';
-  if(tabId==='ranking')await loadRankingData();
+  if(tabId==='ranking')await loadRankingData(true);
   renders[tabId]&&renders[tabId]();
   document.querySelector('.nav-groups').textContent=t('groups');
   document.querySelector('.nav-elim').textContent=t('elim');
@@ -1206,7 +1210,7 @@ async function switchAdminTab(tab,btn){
   if(tab==='teams')renderAdminTeams();
   if(tab==='players'){
     document.getElementById('admin-body').innerHTML=`<div class="empty">${t('loading')}</div>`;
-    await loadRankingData();
+    await loadRankingData(true);
     renderAdminPlayers();
   }
 }
