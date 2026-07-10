@@ -115,6 +115,7 @@ select:focus{outline:none;border-color:var(--green)}
 #tab-elim.section{padding-right:0}
 .bracket-scroll{position:relative;overflow:hidden;padding:2px 16px 22px 0;overscroll-behavior-x:none;touch-action:pan-y}
 .bracket-board{display:flex;gap:44px;align-items:flex-start;min-width:max-content;transform:translateX(calc(-1 * var(--bracket-shift, 0px)));transition:transform .42s cubic-bezier(.2,.8,.2,1)}
+.bracket-scroll.is-initializing .bracket-board{transition:none}
 .bracket-round{--col-w:280px;--card-h:112px;position:relative;width:var(--col-w);flex:0 0 var(--col-w)}
 .bracket-titlebar{height:30px;display:flex;align-items:center;justify-content:center}
 .bracket-title{width:100%;height:30px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;font-family:inherit;cursor:pointer;border-radius:8px;transition:color .15s,background .15s}
@@ -415,7 +416,7 @@ let elimTeams={};
 let saveTimer=null;
 let rankingDataLoaded=false;
 let predictionSaveTimers={};
-let elimActiveRound=1;
+let elimActiveRound=2;
 let elimDateFilter='all';
 const ELIM_BASE_SLOT=132;
 
@@ -1040,7 +1041,7 @@ function renderElim(){
     el.innerHTML=html;
     return;
   }
-  html+=`<div class="bracket-scroll">
+  html+=`<div class="bracket-scroll is-initializing">
     <button class="bracket-nav bracket-nav-prev" type="button" aria-label="${lang==='es'?'Ronda anterior':'Previous round'}" onclick="moveBracketRound(-1)">&lsaquo;</button>
     <button class="bracket-nav bracket-nav-next" type="button" aria-label="${lang==='es'?'Ronda siguiente':'Next round'}" onclick="moveBracketRound(1)">&rsaquo;</button>
     <div class="bracket-board">`;
@@ -1074,6 +1075,9 @@ function renderElim(){
     updateBracketSlots();
     updateBracketShift();
     updateBracketNav();
+    requestAnimationFrame(()=>{
+      document.querySelector('#tab-elim .bracket-scroll')?.classList.remove('is-initializing');
+    });
   });
 }
 
