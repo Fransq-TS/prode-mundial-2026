@@ -318,7 +318,8 @@ const DEFAULT_ELIM_TEAMS={
   qf_1:{home:'España',away:'Bélgica'},
   qf_2:{home:'Noruega',away:'Inglaterra'},
   qf_3:{home:'Argentina',away:'Suiza'},
-  sf_0:{home:'Francia',away:''},
+  sf_0:{home:'Francia',away:'España'},
+  sf_1:{home:'Inglaterra',away:'Argentina'},
 };
 const ELIM_MATCH_NUMBERS={r32:R32_MATCHUPS.map(m=>m.no),r16:[89,90,91,92,93,94,95,96],qf:[97,98,99,100],sf:[101,102],tp:[103],final:[104]};
 const ROUND_LABELS={
@@ -416,7 +417,7 @@ let elimTeams={};
 let saveTimer=null;
 let rankingDataLoaded=false;
 let predictionSaveTimers={};
-let elimActiveRound=2;
+let elimActiveRound=3;
 let elimDateFilter='all';
 const ELIM_BASE_SLOT=132;
 
